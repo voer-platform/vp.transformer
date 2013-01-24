@@ -60,7 +60,7 @@ def import_view(request):
     odt_filename = '%s.odt' % filename
     odt_filepath = str(os.path.join(download_dir_path, odt_filename))
     # run openoffice command
-    command = '/usr/bin/soffice --headless --nologo --nofirststartwizard "macro:///Standard.Module1.SaveAsOOO(' + escape_system(original_filepath)[1:-1] + ',' + odt_filename + ')"'
+    command = '/usr/bin/soffice --headless --nologo --nofirststartwizard "macro:///Standard.Module1.SaveAsOOO(' + escape_system(original_filepath)[1:-1] + ',' + odt_filepath + ')"'
     #command = 'cp ' + original_filepath + ' ' + odt_filepath
     os.system(command)
 
