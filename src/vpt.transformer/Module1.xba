@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Module1" script:language="StarBasic">&apos; Save document as an OpenOffice 2 file. 
+Sub SaveAsOOO( cFile, dFile ) 
+   &apos; mostly a copy of SaveAsPDF. Save as an OpenOffice file. 
+   cURL = ConvertToURL( cFile )
+   oDoc = StarDesktop.loadComponentFromURL( cURL, &quot;_blank&quot;, 0, Array(MakePropertyValue( &quot;Hidden&quot;, True ),))
+   dURL = ConvertToURL( dFile )
+   
+   On Error Goto ErrorHandler
+   	 oDoc.storeAsURL( dURL, Array() )
+   	 oDoc.close( True )
+   ErrorHandler:
+
+End Sub
+
+Sub SaveAsSVG( cFile, dFile ) 
+   &apos; mostly a copy of SaveAsPDF. Save as an SVG file. 
+   cURL = ConvertToURL( cFile )
+   oDoc = StarDesktop.loadComponentFromURL( cURL, &quot;_blank&quot;, 0, Array(MakePropertyValue( &quot;Hidden&quot;, True ),))
+   dURL = ConvertToURL( dFile )
+   
+   On Error Goto ErrorHandler
+     oDoc.storeToURL( dURL, Array(MakePropertyValue( &quot;FilterName&quot;, &quot;draw_svg_Export&quot; ),))
+   	 oDoc.close( True )
+   ErrorHandler:
+   
+End Sub
+
+Sub SaveAsPNG( cFile, dFile ) 
+   &apos; mostly a copy of SaveAsPDF. Save as an PNG file. 
+   cURL = ConvertToURL( cFile )
+   oDoc = StarDesktop.loadComponentFromURL( cURL, &quot;_blank&quot;, 0, Array(MakePropertyValue( &quot;Hidden&quot;, True ),))
+   dURL = ConvertToURL( dFile )
+   
+   On Error Goto ErrorHandler
+     oDoc.storeToURL( dURL, Array(MakePropertyValue( &quot;FilterName&quot;, &quot;draw_png_Export&quot; ),))
+   	 oDoc.close( True )
+   ErrorHandler:
+   
+End Sub
+
+Function MakePropertyValue( Optional cName As String, Optional uValue ) _
+   As com.sun.star.beans.PropertyValue
+   Dim oPropertyValue As New com.sun.star.beans.PropertyValue
+   If Not IsMissing( cName ) Then
+      oPropertyValue.Name = cName
+   EndIf
+   If Not IsMissing( uValue ) Then
+      oPropertyValue.Value = uValue
+   EndIf
+   MakePropertyValue() = oPropertyValue
+End Function
+
+</script:module>
