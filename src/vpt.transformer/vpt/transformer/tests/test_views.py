@@ -28,7 +28,7 @@ class ViewTests(unittest.TestCase):
         # make FieldStorage for POST request
         fs = cgi.FieldStorage()
         fs.name = 'file'
-        fs.filename = 'views.py'
+        fs.filename = 'C1.doc'
         fs.file = fs.make_file()
         fs.file.write(data)
         fs.file.seek(0)
