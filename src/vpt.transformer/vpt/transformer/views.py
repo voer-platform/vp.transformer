@@ -6,7 +6,7 @@ from pyramid.view import view_config
 from pyramid.response import Response
 
 from .models import VPTRoot
-
+from .odt2cnxml import transform
 
 def escape_system(input_string):
     return '"' + input_string.replace('\\', '\\\\').replace('"', '\\"') + '"'
@@ -71,5 +71,8 @@ def import_view(request):
     except IOError as io:
         # TODO: raise exception
         return Response('Conversion Error', 500)
+
+    # Convert and save all the resulting files.
+    tree, files, errors = transform(odt_filepath)
 
     return Response(odt_filepath)
