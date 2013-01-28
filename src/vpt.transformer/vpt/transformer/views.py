@@ -1,6 +1,10 @@
 import os
 import datetime
 import shutil
+import libxml2
+import libxslt
+
+from lxml import etree
 
 from pyramid.view import view_config
 from pyramid.response import Response
@@ -20,8 +24,6 @@ def home_view(request):
 
 @view_config(context=VPTRoot, name='import')
 def import_view(request):
-    import pdb; pdb.set_trace()
-
     # get input file from request
     fs = request.POST.get('file')
 
@@ -72,7 +74,22 @@ def import_view(request):
         # TODO: raise exception
         return Response('Conversion Error', 500)
 
+    import pdb; pdb.set_trace()
     # Convert and save all the resulting files.
     tree, files, errors = transform(odt_filepath)
+    cnxml = clean_cnxml(etree.tostring(tree))
 
     return Response(odt_filepath)
+
+# Pretty CNXML printing with libxml2 because etree/lxml cannot do pretty printing semantic correct
+def clean_cnxml(iCnxml, iMaxColumns=80):
+    xsl = os.path.join(current_dir, 'utils_pretty.xsl')
+    style_doc = libxml2.parseFile(xsl)
+    style = libxslt.parseStylesheetDoc(style_doc)
+    doc = libxml2.parseDoc(iCnxml)
+    result = style.applyStylesheet(doc, None)
+    pretty_cnxml = style.saveResultToString(result)
+    style.freeStylesheet()
+    doc.freeDoc()
+    result.freeDoc()
+    return pretty_cnxml
