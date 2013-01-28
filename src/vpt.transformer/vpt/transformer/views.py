@@ -83,6 +83,7 @@ def import_view(request):
 
 # Pretty CNXML printing with libxml2 because etree/lxml cannot do pretty printing semantic correct
 def clean_cnxml(iCnxml, iMaxColumns=80):
+    current_dir = os.path.dirname(__file__)
     xsl = os.path.join(current_dir, 'utils_pretty.xsl')
     style_doc = libxml2.parseFile(xsl)
     style = libxslt.parseStylesheetDoc(style_doc)

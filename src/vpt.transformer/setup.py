@@ -13,6 +13,7 @@ requires = [
     'pyramid_tm',
     'pyramid_debugtoolbar',
     'lxml',
+    'libxml2-python',
     'ZODB3',
     'waitress',
     'requests'
