@@ -80,7 +80,7 @@ def import_view(request):
     cnxml = clean_cnxml(etree.tostring(tree))
 
     # save files
-    save_file_path = os.path.join(download_dir_path, '%.cnxml' % filename)
+    save_file_path = os.path.join(download_dir_path, '%s.cnxml' % filename)
     if os.path.exists(save_file_path):
         os.rename(save_file_path, save_file_path + '~')
     f = open(save_file_path, 'w')
