@@ -75,9 +75,17 @@ def import_view(request):
         return Response('Conversion Error', 500)
 
     import pdb; pdb.set_trace()
-    # Convert and save all the resulting files.
+    # convert to cnxml
     tree, files, errors = transform(odt_filepath)
     cnxml = clean_cnxml(etree.tostring(tree))
+
+    # save files
+    save_file_path = os.path.join(download_dir_path, '%.cnxml' % filename)
+    if os.path.exists(save_file_path):
+        os.rename(save_file_path, save_file_path + '~')
+    f = open(save_file_path, 'w')
+    f.write(cnxml)
+    f.close()
 
     return Response(odt_filepath)
 
