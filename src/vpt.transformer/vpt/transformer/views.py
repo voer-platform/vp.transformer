@@ -4,12 +4,14 @@ import shutil
 import libxml2
 import libxslt
 
+from cStringIO import StringIO
 from lxml import etree
 
 from pyramid.view import view_config
 from pyramid.response import Response
 
 from rhaptos.cnxmlutils.odt2cnxml import transform
+from rhaptos.cnxmlutils.xml2xhtml import transform_cnxml
 
 from .models import VPTRoot
 
@@ -72,12 +74,17 @@ def import_view(request):
     tree, files, errors = transform(odt_filepath)
     cnxml = clean_cnxml(etree.tostring(tree))
 
-    # save cnxml file
-    cnxml_file_path = os.path.join(save_dir_path, '%s.cnxml' % filename)
-    if os.path.exists(save_file_path):
-        os.rename(cnxml_file_path, cnxml_file_path + '~')
-    f = open(cnxml_file_path, 'w')
-    f.write(cnxml)
+    # convert to html
+    cnxml_file = StringIO(cnxml)
+    html_tree = transform_cnxml(cnxml_file)
+    html = etree.tostring(html_tree)
+
+    # save html file
+    html_file_path = os.path.join(save_dir_path, '%s.html' % filename)
+    if os.path.exists(html_file_path):
+        os.rename(html_file_path, html_file_path + '~')
+    f = open(html_file_path, 'w')
+    f.write(html)
     f.close()
 
     return Response(odt_filepath)

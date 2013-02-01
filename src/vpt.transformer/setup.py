@@ -16,7 +16,8 @@ requires = [
     'libxml2-python',
     'ZODB3',
     'waitress',
-    'requests'
+    'requests',
+    'rhaptos.cnxmlutils'
     ]
 
 setup(name='vpt.transformer',
