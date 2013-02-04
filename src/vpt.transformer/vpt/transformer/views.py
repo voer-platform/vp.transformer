@@ -3,6 +3,7 @@ import datetime
 import shutil
 import libxml2
 import libxslt
+import zipfile
 
 from cStringIO import StringIO
 from lxml import etree
@@ -69,7 +70,6 @@ def import_view(request):
         # TODO: raise exception
         return Response('Conversion Error', 500)
 
-    import pdb; pdb.set_trace()
     # convert to cnxml
     tree, files, errors = transform(odt_filepath)
     cnxml = clean_cnxml(etree.tostring(tree))
@@ -79,15 +79,24 @@ def import_view(request):
     html_tree = transform_cnxml(cnxml_file)
     html = etree.tostring(html_tree)
 
-    # save html file
-    html_file_path = os.path.join(save_dir_path, '%s.html' % filename)
-    if os.path.exists(html_file_path):
-        os.rename(html_file_path, html_file_path + '~')
-    f = open(html_file_path, 'w')
-    f.write(html)
-    f.close()
+    # produce zipfile
+    ram = StringIO()
+    zip_archive = zipfile.ZipFile(ram, 'w')
+    zip_archive.writestr('index.vpxml', generateVPXML())
+    zip_archive.writestr(os.path.join('content', 'index.html'), html)
+    for fname, fdata in files.items():
+        zip_archive.writestr(os.path.join('content', fname), fdata)
+    zip_archive.close()
 
-    return Response(odt_filepath)
+    # save zipfile
+    #zip_file_path = os.path.join(save_dir_path, '%s.zip' % filename)
+    #if os.path.exists(zip_file_path):
+    #    os.rename(zip_file_path, zip_file_path + '~')
+    #f = open(zip_file_path, 'wb')
+    #f.write(ram.getvalue())
+    #f.close()
+
+    return Response(content_type='application/octet-stream', body=ram.getvalue())
 
 # Pretty CNXML printing with libxml2 because etree/lxml cannot do pretty printing semantic correct
 def clean_cnxml(iCnxml, iMaxColumns=80):
@@ -102,3 +111,68 @@ def clean_cnxml(iCnxml, iMaxColumns=80):
     doc.freeDoc()
     result.freeDoc()
     return pretty_cnxml
+
+def generateVPXML():
+    content = """
+<?xml version="1.0"?>
+<vpxml xmlns="http://voer.edu.vn/vpxml" vdp_version="1.0">
+    <title>This is the title of data unit</title>
+
+    <metadata>    
+       <type>module</type>
+       <version>1.2b</version>
+       <origin>VOER CMS</origin>
+       <version>1.2b</version>
+       <origin>VOER CMS</origin>
+       <created>2000/05/18<created>
+       <modified></modified>
+       <license>cc-by</license>
+       <authors>
+           <author id="user01">
+               <fullname>An Organization</fullname>
+               <email>me@who.com</email>
+               <phone>012301230123</phone>
+           </author>
+           <author id="user02">
+               <fullname>An Organization</fullname>
+               <email>me@who.com</email>
+               <phone>012301230123</phone>
+           </author>
+       </authors>
+       <keywords>
+           <keyword>attribute 1</keyword>
+           <keyword>attribute 2</keyword>
+           <keyword>attribute 3</keyword>
+       <keywords>
+       <categories>
+           <category>cat 1</category>
+           <category>cat 2</category>
+           <category>cat 3</category>
+       </categories>
+    </metadata>
+
+    <files>
+       <file id="hello">
+           <path>content/hello.girls</path>
+           <title>This is the first media</title>
+           <description></description>
+           <media_type></media_type>
+       </file>
+       <file id="aloha">
+           <path>content/hello.mama</path>
+           <title>This is the second media</title>
+           <description></description>
+           <media_type>video.mp4</media_type>
+       </file>
+    </files>
+
+    <order>
+       <file_id>hello</file_id>
+       <section id="section-id-01" title="This is the middle section">
+           <file_id>third_file</file_id>            
+       </section>
+       <file_id>aloha</file_id>
+    </order>
+</vpxml>"""
+    return content
+
