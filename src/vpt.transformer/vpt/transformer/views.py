@@ -82,19 +82,19 @@ def import_view(request):
     # produce zipfile
     ram = StringIO()
     zip_archive = zipfile.ZipFile(ram, 'w')
-    zip_archive.writestr('index.vpxml', generateVPXML())
+    zip_archive.writestr('index.vpxml', generateVPXML(filename, files.keys()))
     zip_archive.writestr(os.path.join('content', 'index.html'), html)
     for fname, fdata in files.items():
         zip_archive.writestr(os.path.join('content', fname), fdata)
     zip_archive.close()
 
     # save zipfile
-    #zip_file_path = os.path.join(save_dir_path, '%s.zip' % filename)
-    #if os.path.exists(zip_file_path):
-    #    os.rename(zip_file_path, zip_file_path + '~')
-    #f = open(zip_file_path, 'wb')
-    #f.write(ram.getvalue())
-    #f.close()
+    zip_file_path = os.path.join(save_dir_path, '%s.zip' % filename)
+    if os.path.exists(zip_file_path):
+        os.rename(zip_file_path, zip_file_path + '~')
+    f = open(zip_file_path, 'wb')
+    f.write(ram.getvalue())
+    f.close()
 
     return Response(content_type='application/octet-stream', body=ram.getvalue())
 
@@ -112,67 +112,37 @@ def clean_cnxml(iCnxml, iMaxColumns=80):
     result.freeDoc()
     return pretty_cnxml
 
-def generateVPXML():
+def generateVPXML(original_filename='', filenames=[]):
     content = """
 <?xml version="1.0"?>
 <vpxml xmlns="http://voer.edu.vn/vpxml" vdp_version="1.0">
-    <title>This is the title of data unit</title>
+    <title>%(title)s</title>
 
     <metadata>    
        <type>module</type>
-       <version>1.2b</version>
+       <version>1.0</version>
        <origin>VOER CMS</origin>
-       <version>1.2b</version>
-       <origin>VOER CMS</origin>
-       <created>2000/05/18<created>
+       <created>%(created)s<created>
        <modified></modified>
-       <license>cc-by</license>
-       <authors>
-           <author id="user01">
-               <fullname>An Organization</fullname>
-               <email>me@who.com</email>
-               <phone>012301230123</phone>
-           </author>
-           <author id="user02">
-               <fullname>An Organization</fullname>
-               <email>me@who.com</email>
-               <phone>012301230123</phone>
-           </author>
-       </authors>
-       <keywords>
-           <keyword>attribute 1</keyword>
-           <keyword>attribute 2</keyword>
-           <keyword>attribute 3</keyword>
-       <keywords>
-       <categories>
-           <category>cat 1</category>
-           <category>cat 2</category>
-           <category>cat 3</category>
-       </categories>
+       <license></license>
     </metadata>
 
-    <files>
-       <file id="hello">
-           <path>content/hello.girls</path>
-           <title>This is the first media</title>
-           <description></description>
-           <media_type></media_type>
-       </file>
-       <file id="aloha">
-           <path>content/hello.mama</path>
-           <title>This is the second media</title>
-           <description></description>
-           <media_type>video.mp4</media_type>
-       </file>
+    <files>"""
+    for filename in filenames:
+        content += """
+       <file id="%s">
+           <path>content/%s</path>
+       </file>""" % (filename, filename)
+    content += """
     </files>
 
-    <order>
-       <file_id>hello</file_id>
-       <section id="section-id-01" title="This is the middle section">
-           <file_id>third_file</file_id>            
-       </section>
-       <file_id>aloha</file_id>
+    <order>"""
+    for filename in filenames:
+        content += """
+       <file_id>%s</file_id>""" % filename
+    content += """
     </order>
 </vpxml>"""
-    return content
+    return content % {'title': original_filename,
+                      'created': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
