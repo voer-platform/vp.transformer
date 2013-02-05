@@ -19,9 +19,11 @@ to this OpenOffice subfolder (xxxx = libre/open):
     .XXXXXXoffice/3/user/basic/Standard/.
 
 Example:
+
     cp Module1.xba ~/.libreoffice/3/user/basic/Standard/.
 
 Install virtualenv and run the buildout.
+
     git clone https://github.com/voer-platform/vp.transformer vpt-buildout
     cd vpt-buildout
     virtualenv --no-site-packages .
@@ -29,10 +31,12 @@ Install virtualenv and run the buildout.
     ./bin/buildout -Nv
 
 Run the site.
+
     ./bin/paster serve src/vpt.transformer/vpt/development.ini --reload
     firefox http://localhost:6543/
 
 Run tests.
+
     cd src/vpt.transformer/
     ../../bin/python setup.py develop
     ../../bin/python setup.py test -q
