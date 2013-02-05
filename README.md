@@ -14,9 +14,9 @@ You need to copy the macro file Module1.xba to your Libre-/OpenOffice config fol
 
 https://github.com/voer-platform/vp.transformer/tree/master/src/vpt.transformer
 
-to this OpenOffice subfolder (xxxx = libre/open)::
+to this OpenOffice subfolder (xxxx = libre/open):
 
-   .XXXXXXoffice/3/user/basic/Standard/.
+    .XXXXXXoffice/3/user/basic/Standard/.
 
 Example:
     cp Module1.xba ~/.libreoffice/3/user/basic/Standard/.
