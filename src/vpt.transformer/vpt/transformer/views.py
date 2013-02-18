@@ -82,10 +82,11 @@ def import_view(request):
     # produce zipfile
     ram = StringIO()
     zip_archive = zipfile.ZipFile(ram, 'w')
-    zip_archive.writestr('index.vpxml', generateVPXML(filename, files.keys()))
-    zip_archive.writestr(os.path.join('content', 'index.html'), html)
+    # uncomment this if you need a vpxml
+    #zip_archive.writestr('index.vpxml', generateVPXML(filename, files.keys()))
+    zip_archive.writestr('index.html', html)
     for fname, fdata in files.items():
-        zip_archive.writestr(os.path.join('content', fname), fdata)
+        zip_archive.writestr(fname, fdata)
     zip_archive.close()
 
     # save zipfile
@@ -112,6 +113,7 @@ def clean_cnxml(iCnxml, iMaxColumns=80):
     result.freeDoc()
     return pretty_cnxml
 
+# not used, should be removed then
 def generateVPXML(original_filename='', filenames=[]):
     content = """
 <?xml version="1.0"?>
