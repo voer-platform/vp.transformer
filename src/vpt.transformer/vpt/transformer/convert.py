@@ -1,7 +1,6 @@
 import httplib, urllib, urllib2
 import os
 import itertools
-import subprocess
 import sys
 import mimetools
 import mimetypes
@@ -11,8 +10,6 @@ import base64
 from urllib2 import urlopen
 #from keepalive import HTTPHandler
 from cStringIO import StringIO
-from multiprocessing import Process
-import threading
 
 '''
  This class definition was taken from http://www.doughellmann.com/PyMOTW/urllib2/#uploading-files. 
@@ -95,6 +92,7 @@ class DocumentConverterClient:
         multi_form.add_field('outputFormat', output_type)
         body = str(multi_form)
         # Build the request
+        # TODO: set the host as config variable
         url = 'http://localhost:8080/converter/converted/document.' + output_type
         request= urllib2.Request(url, data=body)
         # Header to specify that the request contains multipart/form  data
@@ -104,7 +102,7 @@ class DocumentConverterClient:
             t1 = time.time()
             # Reads and writes converted data to a file
             response = urllib2.urlopen(request).read()
-            result_file = open(output_file, 'w')
+            result_file = open(output_file, 'wb')
             result_file.write(response)
             t2 = time.time()  
             print 'Conversion Successful! \nConversion took %0.3f ms' % ((t2-t1)*1000.0)
@@ -117,90 +115,3 @@ class DocumentConverterClient:
             print message
             return False
     
-
-if __name__ == '__main__':
-    argv = sys.argv
-    output_types = ['odt', 'pdf', 'sxw', 'doc', 'rtf', 'txt', 'wiki']
-    help_file = open('help.txt', 'r')
-    help = help_file.read()
-    #Batch conversion control logic
-    #Example code is: #python convert.py '-b' "testbed directory"  "output_directory" 3 doc pdf
-    if len(argv) == 7 and argv[1] == '-b':
-        testbed_directory = argv[2]
-        output_directory = argv[3] 
-        if argv[4].isdigit():
-            num_docs = int(argv[4]) 
-        else:
-            print help
-            sys.exit()
-        input_type = argv[5]
-        output_type = argv[6]
-       
-        if output_type not in output_types or input_type not in output_types:
-            print help
-            sys.exit()
-        converter = DocumentConverterClient()
-        # Grabs all the documents listed in the directory. testbed_directory should refer to the testbed location of the google docs 
-	#ls_output = subprocess.check_output(["ls", testbed_directory])
-	ls_output = subprocess.Popen(['ls', testbed_directory], stdout=subprocess.PIPE).communicate()[0]
-        # Splits all the filenames using new lines as the delimiter
-        files_in_directory = ls_output.split('\n')
-        # Gets the number of documents which will be useful for iterations
-        total_num_docs = len(files_in_directory)
-        num_iterations = num_docs 
-        try:
-            ps = [ ]
-            #Starts the conversion of each document in separate processes
-            for i in range(0, num_docs):
-                converter = DocumentConverterClient()
-                #To Do: Check that the file in the directory is actually of the input_type
-                output_file = files_in_directory[i].split('.' + input_type)[0] + '.' + output_type
-                input_file = testbed_directory + files_in_directory[i]
-                output_file = output_directory + output_file
-                p = Process(target=converter.convert, args=(input_file,output_type,output_file,))
-                p.start()
-                ps.append(p)
-            # Joins on all the processes
-            for p in ps:
-                p.join()
-
-        except IOError as io:
-            print "File not found"
-        except Exception as e:
-                    print e
-    # Conversion of a single file 
-    # Example: python convert.py ~/foo  ~/outputdir doc pdf
-    elif len(argv) == 5:
-        input_file = argv[1]
-        output_directory = argv[2]
-        input_type = argv[3]
-        output_type = argv[4] #'odt'
-        if output_type not in output_types or input_type not in output_types:
-            print help
-            sys.exit()
-        converter = DocumentConverterClient()
-        #Gets the filename
-        filename = input_file.split('/')
-        filename = filename[len(filename) - 1]
-
-
-        try:
-            #Starts the conversion of the document
-            converter = DocumentConverterClient()
-            output_file = filename.split(input_type)[0] + output_type 
-            output_file = output_directory + output_file
-            #To Do: Check that the file is actually of the input_type
-            p = Process(target=converter.convert, args=(input_file,output_type,output_file,))
-            p.start()
-            p.join()
-        except IOError as io:
-            print "File not found"
-        except Exception as e:
-                    print e
-
-    elif len(argv) == 2 and argv[1] == '-help':
-        print help
-    else: 
-        print help
-
-
