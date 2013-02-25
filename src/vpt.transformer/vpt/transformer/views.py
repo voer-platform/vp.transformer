@@ -31,16 +31,14 @@ def home_view(request):
 def import_view(request):
     # get input file from request
     fs = request.POST.get('file')
+    # get token and client id from request
+    token = request.POST.get('token')
+    cid = request.POST.get('cid')
 
-    # validate file
-    if fs is None:
-        return Response('File Not Found', 404)
-    if not hasattr(fs, 'filename'):
-        return Response('File Error', 500)
-
-    # TODO: validate mimetypes
-
-    # TODO: validate file size
+    # validate inputs
+    error = validate_inputs(fs, token, cid)
+    if error is not None:
+        return Response(error[0], error[1])
 
     # path to filestorages
     save_dir_path = request.registry.settings['transform_dir']
@@ -119,6 +117,20 @@ def clean_cnxml(iCnxml, iMaxColumns=80):
     doc.freeDoc()
     result.freeDoc()
     return pretty_cnxml
+
+def validate_inputs(fs, token, cid):
+    # TODO: validate mimetypes
+    # TODO: validate file size
+    if fs is None:
+        return ('File Not Found', 404)
+    if not hasattr(fs, 'filename'):
+        return ('File Error', 500)
+    if token is None:
+        return ('Token Not Found', 404)
+    if cid is None:
+        return ('Client Id Not Found', 404)
+    # if no errors
+    return None
 
 # not used, should be removed then
 def generateVPXML(original_filename='', filenames=[]):

@@ -33,7 +33,9 @@ class ViewTests(unittest.TestCase):
         fs.file.write(data)
         fs.file.seek(0)
         # generate test request
-        request = testing.DummyRequest(post={'file': fs})
+        token = '123'
+        cid = 'abc'
+        request = testing.DummyRequest(post={'file': fs, 'token': token, 'cid': cid})
         # FIXME - manually add transform_dir to settings
         request.registry.settings['transform_dir'] = '%s/transforms' % parent_path
         # run the view and get response
