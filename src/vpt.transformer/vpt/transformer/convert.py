@@ -102,6 +102,7 @@ class DocumentConverterClient:
             t1 = time.time()
             # Reads and writes converted data to a file
             response = urllib2.urlopen(request).read()
+            # oerpub use 'w' only, I fixed it with 'wb' - @vietdt
             result_file = open(output_file, 'wb')
             result_file.write(response)
             t2 = time.time()  

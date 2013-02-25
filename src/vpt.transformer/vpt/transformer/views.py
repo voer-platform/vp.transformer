@@ -4,6 +4,7 @@ import shutil
 import libxml2
 import libxslt
 import zipfile
+import requests
 
 from cStringIO import StringIO
 from lxml import etree
@@ -39,6 +40,10 @@ def import_view(request):
     error = validate_inputs(fs, token, cid)
     if error is not None:
         return Response(error[0], error[1])
+
+    # validate authentication
+    if not isValidToken(token, cid):
+        return Response('Invalid Token', 401)
 
     # path to filestorages
     save_dir_path = request.registry.settings['transform_dir']
@@ -131,6 +136,14 @@ def validate_inputs(fs, token, cid):
         return ('Client Id Not Found', 404)
     # if no errors
     return None
+
+def isValidToken(token, cid):
+    base_url = 'http://dev.voer.vn:2013/1/token'
+    url = '%s/%s/?cid=%s' % (base_url, token, cid)
+    r = requests.get(url)
+    if r.status_code == 200:
+        return True
+    return False
 
 # not used, should be removed then
 def generateVPXML(original_filename='', filenames=[]):
