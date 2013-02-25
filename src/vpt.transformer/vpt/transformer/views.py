@@ -14,6 +14,7 @@ from pyramid.response import Response
 from rhaptos.cnxmlutils.odt2cnxml import transform
 from rhaptos.cnxmlutils.xml2xhtml import transform_cnxml
 
+import convert as JOD # Imports JOD convert script
 from .models import VPTRoot
 
 def escape_system(input_string):
@@ -59,8 +60,14 @@ def import_view(request):
     odt_filename = '%s.odt' % filename
     odt_filepath = str(os.path.join(save_dir_path, odt_filename))
     # run openoffice command
-    command = '/usr/bin/soffice --headless --nologo --nofirststartwizard "macro:///Standard.Module1.SaveAsOOO(' + escape_system(original_filepath)[1:-1] + ',' + odt_filepath + ')"'
-    os.system(command)
+    #command = '/usr/bin/soffice --headless --nologo --nofirststartwizard "macro:///Standard.Module1.SaveAsOOO(' + escape_system(original_filepath)[1:-1] + ',' + odt_filepath + ')"'
+    #os.system(command)
+    # run jod service
+    converter = JOD.DocumentConverterClient()
+    try:
+        converter.convert(original_filepath, 'odt', odt_filepath)
+    except Exception as e:
+        print e
 
     # check file existed
     try:
