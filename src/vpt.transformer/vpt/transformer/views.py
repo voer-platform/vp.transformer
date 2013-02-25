@@ -41,10 +41,6 @@ def import_view(request):
     if error is not None:
         return Response(error[0], error[1])
 
-    # validate authentication
-    if not isValidToken(token, cid):
-        return Response('Invalid Token', 401)
-
     # path to filestorages
     save_dir_path = request.registry.settings['transform_dir']
 
@@ -134,6 +130,8 @@ def validate_inputs(fs, token, cid):
         return ('Token Not Found', 404)
     if cid is None:
         return ('Client Id Not Found', 404)
+    if not isValidToken(token, cid):
+        return ('Invalid Token', 401)
     # if no errors
     return None
 
