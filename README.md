@@ -36,13 +36,16 @@ Installing jodconverter with tomcat
 ===================================
 
 First run soffice in headless mode. Note: run as root
+
     # soffice --headless --accept="socket,host=127.0.0.1,port=8100;urp;" --nofirststartwizard &
 
 Download the jodconverter-tomcat-2.2.2.zip and unzip.
 Set JRE_HOME to your jre installed location e.g.
+
     $ export JRE_HOME=/usr/lib/jvm/default-java
 
 Start tomcat.
+
     $ cd jodconverter-tomcat-2.2.2/
     $ sudo -E ./bin/startup.sh
 
