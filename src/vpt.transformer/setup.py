@@ -12,6 +12,7 @@ requires = [
     'transaction',
     'pyramid_tm',
     'pyramid_debugtoolbar',
+    'Pillow',
     'lxml',
     'libxml2-python',
     'ZODB3',
