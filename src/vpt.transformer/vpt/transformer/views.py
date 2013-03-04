@@ -14,6 +14,7 @@ from pyramid.response import Response
 
 from rhaptos.cnxmlutils.odt2cnxml import transform
 from rhaptos.cnxmlutils.xml2xhtml import transform_cnxml
+from oerpub.rhaptoslabs.cnxml2htmlpreview.cnxml2htmlpreview import cnxml_to_htmlpreview
 
 import convert as JOD # Imports JOD convert script
 from .models import VPTRoot
@@ -81,9 +82,10 @@ def import_view(request):
     cnxml = clean_cnxml(etree.tostring(tree))
 
     # convert to html
-    cnxml_file = StringIO(cnxml)
-    html_tree = transform_cnxml(cnxml_file)
-    html = etree.tostring(html_tree)
+    #cnxml_file = StringIO(cnxml)
+    #html_tree = transform_cnxml(cnxml_file)
+    #html = etree.tostring(html_tree)
+    html = cnxml_to_htmlpreview(cnxml)
 
     # produce zipfile
     ram = StringIO()
