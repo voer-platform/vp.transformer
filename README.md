@@ -9,6 +9,8 @@ Install required packages.
     sudo apt-get install git-core libxslt1.1 libxslt1-dev python-dev python-virtualenv
     sudo apt-get install openoffice.org
     sudo apt-get install python-lxml python-libxslt1 python-imaging
+    # for rhaptos.cnxmlutils. we should avoid it later
+    sudo apt-get install tidy libtidy-0.99-0
 
 Install virtualenv and run the buildout.
 
@@ -21,13 +23,17 @@ Install virtualenv and run the buildout.
 
 Run the site.
 
-    ./bin/paster serve src/vpt.transformer/vpt/development.ini --reload
+    ./bin/paster serve src/vpt.transformer/vpt/development.ini --daemon
     firefox http://localhost:6543/
 
 Run tests.
 
     cd src/rhaptos.cnxmlutils/
     ../../bin/python setup.py install
+
+    cd src/oerpub.rhaptoslabs.cnxml2htmlpreview/
+    ../../bin/python setup.py install
+
     cd src/vpt.transformer/
     ../../bin/python setup.py develop
     ../../bin/python setup.py test -q
