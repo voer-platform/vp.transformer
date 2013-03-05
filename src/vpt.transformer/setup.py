@@ -18,7 +18,9 @@ requires = [
     'ZODB3',
     'waitress',
     'requests',
-    'rhaptos.cnxmlutils'
+    'rhaptos.cnxmlutils',
+    'pytidylib', # required by rhaptos.cnxmlutils
+    'oerpub.rhaptoslabs.cnxml2htmlpreview'
     ]
 
 setup(name='vpt.transformer',
