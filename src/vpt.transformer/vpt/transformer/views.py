@@ -206,9 +206,23 @@ def export_view(request):
     zip_archive = zipfile.ZipFile(original_filepath, 'r')
     # Unzip into a new directory
     filename, extension = os.path.splitext(original_filename)
-    input_dir_path = os.path.join(save_dir_path, filename)
-    os.mkdir(input_dir_path)
-    zip_archive.extractall(path=input_dir_path)
+    export_dir_path = os.path.join(save_dir_path, filename)
+    os.mkdir(export_dir_path)
+    zip_archive.extractall(path=export_dir_path)
+
+    # Run wkxhtmltopdf to generate a pdf file
+    pdfgen = '/usr/bin/wkhtmltopdf'
+    input_file_path = os.path.join(export_dir_path, 'index.html')
+    output_file_path = os.path.join(export_dir_path, '%s.pdf' % filename)
+    strCmd = [pdfgen, '--footer-right', "'[page] / [toPage]'", '--footer-spacing', '1', '-q', input_file_path, output_file_path]
+    if verbose:
+      print >> sys.stderr, "Executing PDF generation: " + ' '.join(strCmd)
+
+    env = { }
+    # run the program with subprocess and pipe the input and output to variables
+    p = subprocess.Popen(strCmd, close_fds=True, env=env)
+    # set STDIN and STDOUT and wait untill the program finishes
+    _, stdErr = p.communicate()
 
     ram = StringIO()
     return Response(content_type='application/pdf', body=ram.getvalue())
