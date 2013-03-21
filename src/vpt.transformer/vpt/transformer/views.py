@@ -59,9 +59,6 @@ def import_view(request):
     filename, extension = os.path.splitext(original_filename)
     odt_filename = '%s.odt' % filename
     odt_filepath = str(os.path.join(save_dir_path, odt_filename))
-    # run openoffice command
-    #command = '/usr/bin/soffice --headless --nologo --nofirststartwizard "macro:///Standard.Module1.SaveAsOOO(' + escape_system(original_filepath)[1:-1] + ',' + odt_filepath + ')"'
-    #os.system(command)
     # run jod service
     converter = JOD.DocumentConverterClient()
     try:
@@ -82,9 +79,6 @@ def import_view(request):
     cnxml = clean_cnxml(etree.tostring(tree))
 
     # convert to html
-    #cnxml_file = StringIO(cnxml)
-    #html_tree = transform_cnxml(cnxml_file)
-    #html = etree.tostring(html_tree)
     html = cnxml_to_htmlpreview(cnxml)
 
     # produce zipfile
@@ -182,5 +176,37 @@ def generateVPXML(original_filename='', filenames=[]):
 
 @view_config(context=VPTRoot, name='export')
 def export_view(request):
+    # get input file from request
+    fs = request.POST.get('file')
+    # get export type
+    etype = request.POST.get('type')
+    # get token and client id from request
+    token = request.POST.get('token')
+    cid = request.POST.get('cid')
+
+    # validate inputs
+    # TODO: validate export type
+    error = validate_inputs(fs, token, cid)
+    if error is not None:
+        return Response(error[0], error[1])
+
+    # path to filestorages
+    save_dir_path = request.registry.settings['transform_dir']
+
+    # save the original file so that we can convert, plus keep it.
+    now_string = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+    original_filename = '%s-%s' % (now_string, fs.filename)
+    original_filepath = str(os.path.join(save_dir_path, original_filename))
+    saved_file = open(original_filepath, 'wb')
+    input_file = fs.file
+    shutil.copyfileobj(input_file, saved_file)
+    saved_file.close()
+    input_file.close()
+
+    zip_archive = zipfile.ZipFile(original_filepath, 'r')
+    # Unzip into a new directory
+    input_dir_path = os.path.join(save_dir_path, original_filename)
+    zip_archive.extractall(path=input_dir_path)
+
     ram = StringIO()
     return Response(content_type='application/pdf', body=ram.getvalue())
