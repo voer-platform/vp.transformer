@@ -1,5 +1,6 @@
 import os
 import datetime
+import subprocess
 import shutil
 import libxml2
 import libxslt
@@ -213,16 +214,18 @@ def export_view(request):
     # Run wkxhtmltopdf to generate a pdf file
     pdfgen = '/usr/bin/wkhtmltopdf'
     input_file_path = os.path.join(export_dir_path, 'index.html')
-    output_file_path = os.path.join(export_dir_path, '%s.pdf' % filename)
-    strCmd = [pdfgen, '--footer-right', "'[page] / [toPage]'", '--footer-spacing', '1', '-q', input_file_path, output_file_path]
-    if verbose:
-      print >> sys.stderr, "Executing PDF generation: " + ' '.join(strCmd)
-
+    output_filename = '%s.pdf' % os.path.splitext(fs.filename)[0]
+    output_file_path = os.path.join(export_dir_path, output_filename)
+    strCmd = [pdfgen, '--footer-right', '[page] / [toPage]', '--footer-spacing', '1', '-q', input_file_path, output_file_path]
     env = { }
     # run the program with subprocess and pipe the input and output to variables
     p = subprocess.Popen(strCmd, close_fds=True, env=env)
     # set STDIN and STDOUT and wait untill the program finishes
     _, stdErr = p.communicate()
 
-    ram = StringIO()
-    return Response(content_type='application/pdf', body=ram.getvalue())
+    # get exported file and return the response
+    rf = open(output_file_path, 'r')
+    body = rf.read()
+    rf.close()
+
+    return Response(content_type='application/pdf', content_disposition='attachment; filename=%s' % output_filename, body=body)
