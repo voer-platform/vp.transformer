@@ -21,12 +21,6 @@ requires = [
     'rhaptos.cnxmlutils',
     'pytidylib', # required by rhaptos.cnxmlutils
     'oerpub.rhaptoslabs.cnxml2htmlpreview',
-    # required by xhtml2pdf
-    'xhtml2pdf',
-    'html5lib',
-    'httplib2',
-    'pyPdf',
-    'reportlab'
     ]
 
 setup(name='vpt.transformer',

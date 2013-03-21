@@ -180,3 +180,7 @@ def generateVPXML(original_filename='', filenames=[]):
     return content % {'title': original_filename,
                       'created': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
+@view_config(context=VPTRoot, name='export')
+def export_view(request):
+    ram = StringIO()
+    return Response(content_type='application/pdf', body=ram.getvalue())
