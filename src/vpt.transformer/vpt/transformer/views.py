@@ -180,13 +180,13 @@ def export_view(request):
     # get input file from request
     fs = request.POST.get('file')
     # get export type
-    etype = request.POST.get('type')
+    output_type = request.POST.get('output')
     # get token and client id from request
     token = request.POST.get('token')
     cid = request.POST.get('cid')
 
     # validate inputs
-    # TODO: validate export type
+    # TODO: validate output type
     error = validate_inputs(fs, token, cid)
     if error is not None:
         return Response(error[0], error[1])
