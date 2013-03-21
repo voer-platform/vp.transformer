@@ -205,7 +205,9 @@ def export_view(request):
 
     zip_archive = zipfile.ZipFile(original_filepath, 'r')
     # Unzip into a new directory
-    input_dir_path = os.path.join(save_dir_path, original_filename)
+    filename, extension = os.path.splitext(original_filename)
+    input_dir_path = os.path.join(save_dir_path, filename)
+    os.mkdir(input_dir_path)
     zip_archive.extractall(path=input_dir_path)
 
     ram = StringIO()
