@@ -57,7 +57,7 @@ class ViewTests(unittest.TestCase):
         fs.file.write(data)
         fs.file.seek(0)
         # generate test request
-        token = '9eb14b5e5867b85c86741022f43c38eb'
+        token = 'a9af1d6ca60243a38eb7d52dd344f7cb'
         cid = 'vietdt'
         request = testing.DummyRequest(post={'file': fs, 'token': token, 'cid': cid})
         # FIXME - manually add transform_dir to settings
