@@ -57,6 +57,27 @@ Start tomcat.
 
 JODConverter will be available at the following URL http://localhost:8080/converter/
 
+
+Install wkhtmltopdf for pdf export
+==================================
+
+Choose a static binary relevant for your environment here: http://code.google.com/p/wkhtmltopdf/downloads/list
+
+    $ wget http://wkhtmltopdf.googlecode.com/files/wkhtmltopdf-0.9.9-static-amd64.tar.bz2
+
+Link to run.
+
+    $ tar xvf wkhtmltopdf-0.9.9-static-amd64.tar.bz2
+    $ sudo cp wkhtmltopdf-amd64 /usr/bin/
+    $ sudo ln -s /usr/bin/wkhtmltopdf-amd64 /usr/bin/wkhtmltopdf
+
+Test command line.
+
+    $ wkhtmltopdf index.html index.pdf
+
+If there's any problem, you may have to compile your self. see: http://code.google.com/p/wkhtmltopdf/wiki/compilation
+
+
 Using the API
 =============
 
@@ -70,7 +91,20 @@ Send a POST request that contains the file to be import.
     cid = <your client id>
     file = <... binary data of your file here ...>
 
-When imported successful, a zip file of html and images.
+When imported successful, it returns a zip file of html and images.
+
+Export
+------
+
+Send a POST request that contains the input file to be export.
+
+    POST $URL/export
+    token = <your given token>
+    cid = <your client id>
+    output = <your expected output type e.g. pdf>
+    file = <... binary data of your file here ...>
+
+When exported successful, it returns a file of your expected output (only pdf now supported).
 
 Example code in python:
 
@@ -79,12 +113,23 @@ Example code in python:
     host = 'localhost'
     port = '6543'
     import_url = 'http://%s:%s/import' % (host, port)
+    export_url = 'http://%s:%s/export' % (host, port)
 
-    token = '123456'
-    cid = 'abc'
+    token = 'a9af1d6ca60243a38eb7d52dd344f7cb'
+    cid = 'vietdt'
     payload = {'token': token, 'cid': cid}
+
     filename = 'test.doc'
-    filedata = open('path/to/test.doc', 'rb').read()
+    filedata = open('vpt/transformer/tests/test_files/C1.doc', 'rb').read()
     files = {'file': (filename, filedata)}
     r = requests.post(import_url, files=files, data=payload)
-    result = r.body
+    print 'Importing ... \n'
+    print r.status_code
+
+    filename = 'test.zip'
+    filedata = open('vpt/transformer/tests/test_files/C1.zip', 'rb').read()
+    files = {'file': (filename, filedata)}
+    r = requests.post(export_url, files=files, data=payload)
+    print '\nExporting ... \n'
+    print r.status_code
+

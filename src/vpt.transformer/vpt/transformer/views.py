@@ -1,5 +1,6 @@
 import os
 import datetime
+import subprocess
 import shutil
 import libxml2
 import libxslt
@@ -59,9 +60,6 @@ def import_view(request):
     filename, extension = os.path.splitext(original_filename)
     odt_filename = '%s.odt' % filename
     odt_filepath = str(os.path.join(save_dir_path, odt_filename))
-    # run openoffice command
-    #command = '/usr/bin/soffice --headless --nologo --nofirststartwizard "macro:///Standard.Module1.SaveAsOOO(' + escape_system(original_filepath)[1:-1] + ',' + odt_filepath + ')"'
-    #os.system(command)
     # run jod service
     converter = JOD.DocumentConverterClient()
     try:
@@ -82,9 +80,6 @@ def import_view(request):
     cnxml = clean_cnxml(etree.tostring(tree))
 
     # convert to html
-    #cnxml_file = StringIO(cnxml)
-    #html_tree = transform_cnxml(cnxml_file)
-    #html = etree.tostring(html_tree)
     html = cnxml_to_htmlpreview(cnxml)
 
     # produce zipfile
@@ -180,3 +175,57 @@ def generateVPXML(original_filename='', filenames=[]):
     return content % {'title': original_filename,
                       'created': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
+@view_config(context=VPTRoot, name='export')
+def export_view(request):
+    # get input file from request
+    fs = request.POST.get('file')
+    # get export type
+    output_type = request.POST.get('output')
+    # get token and client id from request
+    token = request.POST.get('token')
+    cid = request.POST.get('cid')
+
+    # validate inputs
+    # TODO: validate output type
+    error = validate_inputs(fs, token, cid)
+    if error is not None:
+        return Response(error[0], error[1])
+
+    # path to filestorages
+    save_dir_path = request.registry.settings['transform_dir']
+
+    # save the original file so that we can convert, plus keep it.
+    now_string = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+    original_filename = '%s-%s' % (now_string, fs.filename)
+    original_filepath = str(os.path.join(save_dir_path, original_filename))
+    saved_file = open(original_filepath, 'wb')
+    input_file = fs.file
+    shutil.copyfileobj(input_file, saved_file)
+    saved_file.close()
+    input_file.close()
+
+    zip_archive = zipfile.ZipFile(original_filepath, 'r')
+    # Unzip into a new directory
+    filename, extension = os.path.splitext(original_filename)
+    export_dir_path = os.path.join(save_dir_path, filename)
+    os.mkdir(export_dir_path)
+    zip_archive.extractall(path=export_dir_path)
+
+    # Run wkxhtmltopdf to generate a pdf file
+    pdfgen = '/usr/bin/wkhtmltopdf'
+    input_file_path = os.path.join(export_dir_path, 'index.html')
+    output_filename = '%s.pdf' % os.path.splitext(fs.filename)[0]
+    output_file_path = os.path.join(export_dir_path, output_filename)
+    strCmd = [pdfgen, '--footer-right', '[page] / [toPage]', '--footer-spacing', '1', '-q', input_file_path, output_file_path]
+    env = { }
+    # run the program with subprocess and pipe the input and output to variables
+    p = subprocess.Popen(strCmd, close_fds=True, env=env)
+    # set STDIN and STDOUT and wait untill the program finishes
+    _, stdErr = p.communicate()
+
+    # get exported file and return the response
+    rf = open(output_file_path, 'r')
+    body = rf.read()
+    rf.close()
+
+    return Response(content_type='application/pdf', content_disposition='attachment; filename=%s' % output_filename, body=body)

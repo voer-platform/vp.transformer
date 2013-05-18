@@ -20,7 +20,7 @@ requires = [
     'requests',
     'rhaptos.cnxmlutils',
     'pytidylib', # required by rhaptos.cnxmlutils
-    'oerpub.rhaptoslabs.cnxml2htmlpreview'
+    'oerpub.rhaptoslabs.cnxml2htmlpreview',
     ]
 
 setup(name='vpt.transformer',
