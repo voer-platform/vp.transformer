@@ -19,6 +19,7 @@ from oerpub.rhaptoslabs.cnxml2htmlpreview.cnxml2htmlpreview import cnxml_to_html
 
 import convert as JOD # Imports JOD convert script
 from .models import VPTRoot
+from .tasks import process_import
 
 def escape_system(input_string):
     return '"' + input_string.replace('\\', '\\\\').replace('"', '\\"') + '"'
@@ -37,14 +38,27 @@ def import_view(request):
     # get token and client id from request
     token = request.POST.get('token')
     cid = request.POST.get('cid')
+    # get celery task id from request
+    task_id = request.params.get('task_id')
 
     # validate inputs
     error = validate_inputs(fs, token, cid)
-    if error is not None:
-        return Response(error[0], error[1])
+#    if error is not None:
+#        return Response(error[0], error[1])
 
     # path to filestorages
     save_dir_path = request.registry.settings['transform_dir']
+
+    if task_id:
+        result = process_import.AsyncResult(task_id)
+        msg = result.status
+        if result.successful():
+            msg = result.get()
+        return Response(msg)
+    else:
+    	# call celery task
+    	result = process_import.delay()
+    	return Response(result.task_id)
 
     # save the original file so that we can convert, plus keep it.
     now_string = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
