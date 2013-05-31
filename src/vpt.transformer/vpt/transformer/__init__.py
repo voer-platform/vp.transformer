@@ -1,19 +1,13 @@
 from pyramid.config import Configurator
-from pyramid_zodbconn import get_connection
-from .models import appmaker
-
-
-def root_factory(request):
-    conn = get_connection(request)
-    return appmaker(conn.root())
-
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
-    config = Configurator(root_factory=root_factory, settings=settings)
+    config = Configurator(settings=settings)
     config.add_static_view('static', 'static', cache_max_age=3600)
     # publish transforms directory to download transformed files
     config.add_static_view('transforms', 'transforms', cache_max_age=3600)
+    # home view
+    config.add_route('home', '/')
     config.scan()
     return config.make_wsgi_app()
