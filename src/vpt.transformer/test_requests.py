@@ -19,7 +19,7 @@ if __name__ == '__main__':
     files = {'file': (filename, filedata)}
     r = requests.post(import_url, files=files, data=payload)
     print 'Importing ... \n'
-    print r.status_code
+    print r.text
 
     filename = 'test.zip'
     filedata = open('vpt/transformer/tests/test_files/C1.zip', 'rb').read()
