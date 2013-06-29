@@ -18,8 +18,9 @@ from rhaptos.cnxmlutils.odt2cnxml import transform
 from rhaptos.cnxmlutils.xml2xhtml import transform_cnxml
 from oerpub.rhaptoslabs.cnxml2htmlpreview.cnxml2htmlpreview import cnxml_to_htmlpreview
 
-import convert as JOD # Imports JOD convert script
+import .convert as JOD # Imports JOD convert script
 from .models import VPTRoot
+from .no_accent_vietnamese_unicodedata import no_accent_vietnamese
 
 def escape_system(input_string):
     return '"' + input_string.replace('\\', '\\\\').replace('"', '\\"') + '"'
@@ -195,9 +196,12 @@ def export_view(request):
     # path to filestorages
     save_dir_path = request.registry.settings['transform_dir']
 
+    # handle vietnamese filename
+    fs_filename = no_accent_vietnamese(fs.filename)
+
     # save the original file so that we can convert, plus keep it.
     now_string = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    original_filename = '%s-%s' % (now_string, fs.filename)
+    original_filename = '%s-%s' % (now_string, fs_filename)
     original_filepath = str(os.path.join(save_dir_path, original_filename))
     saved_file = open(original_filepath, 'wb')
     input_file = fs.file
@@ -215,7 +219,7 @@ def export_view(request):
     # Run wkxhtmltopdf to generate a pdf file
     pdfgen = '/usr/bin/wkhtmltopdf'
     input_file_paths = getInputFiles(export_dir_path)
-    output_filename = '%s.pdf' % os.path.splitext(fs.filename)[0]
+    output_filename = '%s.pdf' % os.path.splitext(fs_filename)[0]
     output_file_path = os.path.join(export_dir_path, output_filename)
     strCmd = [pdfgen, '--footer-right', '[page] / [toPage]', '--footer-spacing', '1', '-q']
     strCmd.extend(input_file_paths)
