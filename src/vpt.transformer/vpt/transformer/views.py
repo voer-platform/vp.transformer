@@ -18,7 +18,7 @@ from rhaptos.cnxmlutils.odt2cnxml import transform
 from rhaptos.cnxmlutils.xml2xhtml import transform_cnxml
 from oerpub.rhaptoslabs.cnxml2htmlpreview.cnxml2htmlpreview import cnxml_to_htmlpreview
 
-import .convert as JOD # Imports JOD convert script
+import convert as JOD # Imports JOD convert script
 from .models import VPTRoot
 from .no_accent_vietnamese_unicodedata import no_accent_vietnamese
 
