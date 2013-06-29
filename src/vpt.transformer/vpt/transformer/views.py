@@ -48,9 +48,12 @@ def import_view(request):
     # path to filestorages
     save_dir_path = request.registry.settings['transform_dir']
 
+    # handle vietnamese filename
+    fs_filename = no_accent_vietnamese(fs.filename)
+
     # save the original file so that we can convert, plus keep it.
     now_string = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    original_filename = '%s-%s' % (now_string, fs.filename)
+    original_filename = '%s-%s' % (now_string, fs_filename)
     original_filepath = str(os.path.join(save_dir_path, original_filename))
     saved_file = open(original_filepath, 'wb')
     input_file = fs.file
