@@ -5,6 +5,7 @@ import shutil
 import libxml2
 import libxslt
 import zipfile
+import csv
 import requests
 
 from cStringIO import StringIO
@@ -123,12 +124,12 @@ def validate_inputs(fs, token, cid):
         return ('File Not Found', 404)
     if not hasattr(fs, 'filename'):
         return ('File Error', 500)
-    if token is None:
-        return ('Token Not Found', 404)
-    if cid is None:
-        return ('Client Id Not Found', 404)
-    if not isValidToken(token, cid):
-        return ('Invalid Token', 401)
+#    if token is None:
+#        return ('Token Not Found', 404)
+#    if cid is None:
+#        return ('Client Id Not Found', 404)
+#    if not isValidToken(token, cid):
+#        return ('Invalid Token', 401)
     # if no errors
     return None
 
@@ -213,10 +214,12 @@ def export_view(request):
 
     # Run wkxhtmltopdf to generate a pdf file
     pdfgen = '/usr/bin/wkhtmltopdf'
-    input_file_path = os.path.join(export_dir_path, 'index.html')
+    input_file_paths = getInputFiles(export_dir_path)
     output_filename = '%s.pdf' % os.path.splitext(fs.filename)[0]
     output_file_path = os.path.join(export_dir_path, output_filename)
-    strCmd = [pdfgen, '--footer-right', '[page] / [toPage]', '--footer-spacing', '1', '-q', input_file_path, output_file_path]
+    strCmd = [pdfgen, '--footer-right', '[page] / [toPage]', '--footer-spacing', '1', '-q']
+    strCmd.extend(input_file_paths)
+    strCmd.append(output_file_path)
     env = { }
     # run the program with subprocess and pipe the input and output to variables
     p = subprocess.Popen(strCmd, close_fds=True, env=env)
@@ -229,3 +232,40 @@ def export_view(request):
     rf.close()
 
     return Response(content_type='application/pdf', content_disposition='attachment; filename=%s' % output_filename, body=body)
+
+def getInputFiles(export_dir_path):
+    """
+    Return a list of path to index.html and chapter.html files if it's a collection.
+    Return turn the path to index.html only if it's a module.
+    Collection file structrure looks like:
+        collection-x/
+            chapters.txt
+            module-1/
+                index.html
+                p1.jpg
+                p2.jpg
+                ...
+            module-2/
+                index.html
+                p1.jpg
+                p2.jpg
+                ...
+    """
+    results = []
+    # FIXED config filename
+    config_filename = 'chapters.txt'
+    config_filepath = os.path.join(export_dir_path, config_filename)
+    try:
+        with open(config_filepath, 'rb') as cf:
+            reader = csv.reader(cf, delimiter=',', quotechar='"')
+            for row in reader:
+                # TODO: create a chapter.html file
+                chapter_name = row[1]
+                # add path of index.html in each module into result list
+                results.append(os.path.join(export_dir_path, row[0], 'index.html'))
+    except IOError:
+        # it's a module -> return path to index.html only
+        results.append(os.path.join(export_dir_path, 'index.html'))
+
+    return results
+
