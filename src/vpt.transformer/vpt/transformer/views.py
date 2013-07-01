@@ -265,14 +265,35 @@ def getInputFiles(export_dir_path):
     try:
         with open(config_filepath, 'rb') as cf:
             reader = csv.reader(cf, delimiter=',', quotechar='"')
+            cnt = 0
             for row in reader:
-                # TODO: create a chapter.html file
+                if cnt == 0 and len(row) < 2:
+                    # processing the collection title
+                    title = row[0]
+                    title_filepath = os.path.join(export_dir_path, 'title.html')
+                    createTitlePage(title_filepath, title)
+                    # add path of title.html into result list
+                    results.append(title_filepath)
+                    continue
+                module_id = row[0]
+                # create a chapter.html file
+                chapter_filename = 'chapter_%s.html' % module_id
+                chapter_filepath = os.path.join(export_dir_path, module_id, chapter_filename)
                 chapter_name = row[1]
+                createTitlePage(chapter_filepath, chapter_name)
+                # add path of chapter_x.html in each module into result list
+                results.append(chapter_filepath)
                 # add path of index.html in each module into result list
-                results.append(os.path.join(export_dir_path, row[0], 'index.html'))
+                results.append(os.path.join(export_dir_path, module_id, 'index.html'))
+                cnt += 1
     except IOError:
         # it's a module -> return path to index.html only
         results.append(os.path.join(export_dir_path, 'index.html'))
 
     return results
 
+def createTitlePage(filepath, content):
+    html = '<html><body><h1>%s</h1></body></html>' % content
+    f = open(filepath, 'wb')
+    f.write(html)
+    f.close()
