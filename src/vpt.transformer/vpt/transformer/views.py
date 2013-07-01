@@ -293,7 +293,8 @@ def getInputFiles(export_dir_path):
     return results
 
 def createTitlePage(filepath, content):
-    html = '<html><body><h1>%s</h1></body></html>' % content
+    content = unicode(content, 'utf-8')
+    html = '<html><body><center><h1 style="margin-top:250px">%s</h1></center></body></html>' % content.encode('ascii', 'xmlcharrefreplace')
     f = open(filepath, 'wb')
     f.write(html)
     f.close()
