@@ -139,9 +139,11 @@ Cleaner is used to clean temporatory files and directory used in vpt-transformer
 
 Config crontab
 --------------
-Config crontab to schedule cleaner
+Config crontab to schedule cleaner: Setup time for schedule cleaning, path to python and script file.
+
     sudo crontab -e
 
-Setup time for schedule cleaning, path to python and script file.
+
 Example code to put in crontab config file. This code will run the cleaner everyone minute.
+
     */1 * * * * /usr/bin/python /home/vietvd/VPT/ /home/vietvd/VPT/vpt-buildout/src/vpt.transformer/vpt/transformer/cleaner.py
