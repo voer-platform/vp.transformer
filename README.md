@@ -135,7 +135,7 @@ Example code in python:
 
 Cleaner
 =======
-Cleaner is used to clean temporatory files and directory used in vpt-transformer
+Cleaner is used to cleaned temporatory files and directories used in vpt-transformer
 
 Config crontab
 --------------
@@ -144,6 +144,6 @@ Config crontab to schedule cleaner: Setup time for schedule cleaning, path to py
     sudo crontab -e
 
 
-Example code to put in crontab config file. This code will run the cleaner everyone minute.
+Example code to put in crontab config file. This code will run the cleaner every one minute.
 
     */1 * * * * /usr/bin/python /home/vietvd/VPT/ /home/vietvd/VPT/vpt-buildout/src/vpt.transformer/vpt/transformer/cleaner.py
