@@ -22,23 +22,4 @@
   </xsl:copy>
 </xsl:template>
 
-<!-- WORKAROUND - fix bug: duplicated figures show on top after imported docx -->
-<xsl:template match="cnx:figure">
-  <xsl:param name='type'>
-    <xsl:value-of select="substring-after(cnx:media/cnx:image/@mime-type, '/')"/>
-  </xsl:param>
-  <xsl:param name='ext'>
-    <xsl:value-of select="substring-after(cnx:media/cnx:image/@src, '.')"/>
-  </xsl:param>
-  <xsl:choose>
-    <xsl:when test="lower-case($ext) = concat($type, '.', $type)">
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:copy>
-        <xsl:apply-templates select="@*|node()"/>
-      </xsl:copy>
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
 </xsl:stylesheet>
