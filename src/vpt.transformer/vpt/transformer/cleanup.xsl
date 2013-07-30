@@ -37,6 +37,19 @@
   </xsl:choose>
 </xsl:template>
 
+<!-- WORKAROUND - fix bug: remove Untitled Document title on top -->
+<xsl:template match="cnx:title">
+  <xsl:choose>
+    <xsl:when test="text() = 'Untitled Document'">
+    </xsl:when>
+    <xsl:otherwise>
+      <title>
+        <xsl:apply-templates select="@*|node()"/>
+      </title>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
 <xsl:template match="@*|node()">
   <xsl:copy>
     <xsl:apply-templates select="@*|node()"/>
