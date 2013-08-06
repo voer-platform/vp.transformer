@@ -5,7 +5,7 @@ import shutil
 import libxml2
 import libxslt
 import zipfile
-import csv
+import json
 import requests
 
 from cStringIO import StringIO
@@ -254,7 +254,7 @@ def getInputFiles(export_dir_path):
     Return turn the path to index.html only if it's a module.
     Collection file structrure looks like:
         collection-x/
-            chapters.txt
+            collection.json
             module-1/
                 index.html
                 p1.jpg
@@ -268,40 +268,53 @@ def getInputFiles(export_dir_path):
     """
     results = []
     # FIXED config filename
-    config_filename = 'chapters.txt'
+    config_filename = 'collection.json'
     config_filepath = os.path.join(export_dir_path, config_filename)
     try:
         with open(config_filepath, 'rb') as cf:
-            reader = csv.reader(cf, delimiter=',', quotechar='"')
-            cnt = 0
-            for row in reader:
-                if cnt == 0 and len(row) < 2:
-                    # processing the collection title
-                    title = row[0]
-                    title_filepath = os.path.join(export_dir_path, 'title.html')
-                    createTitlePage(title_filepath, title)
-                    # add path of title.html into result list
-                    results.append(title_filepath)
-                    continue
-                module_id = row[0]
-                # create a chapter.html file
-                chapter_filename = 'chapter_%s.html' % module_id
-                chapter_filepath = os.path.join(export_dir_path, module_id, chapter_filename)
-                chapter_name = row[1]
-                createTitlePage(chapter_filepath, chapter_name)
-                # add path of chapter_x.html in each module into result list
-                results.append(chapter_filepath)
-                # add path of index.html in each module into result list
-                results.append(os.path.join(export_dir_path, module_id, 'index.html'))
-                cnt += 1
+            lines = cf.readlines()
+            data = ''.join([line.strip('\n').strip() for line in lines])
+            collection = json.loads(data)
+            # processing the collection title
+            title = collection['title']
+            title_filepath = os.path.join(export_dir_path, 'title.html')
+            createTitlePage(title_filepath, title)
+            # add path of title.html into result list
+            results.append(title_filepath)
+            results.extend(processCollection(export_dir_path, collection['content'], level=0))
     except IOError:
         # it's a module -> return path to index.html only
         results.append(os.path.join(export_dir_path, 'index.html'))
 
     return results
 
+def processCollection(export_dir_path, content, level=0):
+    results = []
+    for item in content:
+        if level == 0:
+            if item['type'] == 'module':
+                id = item['id']
+            else:
+                id = 'subcollection_%d_%d' % (level, content.index(item))
+            # create a chapter.html file for first level only
+            chapter_filename = 'chapter_%s.html' % id
+            chapter_filepath = os.path.join(export_dir_path, chapter_filename)
+            chapter_name = item['title']
+            createTitlePage(chapter_filepath, chapter_name)
+            # add path of chapter_x.html to result list
+            results.append(chapter_filepath)
+        if item['type'] == 'module':
+            # add path of index.html in each module into result list
+            results.append(os.path.join(export_dir_path, item['id'], 'index.html'))
+        else:
+            results.extend(processCollection(export_dir_path, item['content'], level=level+1))
+    return results
+
 def createTitlePage(filepath, content):
-    content = unicode(content, 'utf-8')
+    try:
+        content = unicode(content, 'utf-8')
+    except TypeError:
+        pass
     html = '<html><body><center><h1 style="margin-top:250px">%s</h1></center></body></html>' % content.encode('ascii', 'xmlcharrefreplace')
     f = open(filepath, 'wb')
     f.write(html)
