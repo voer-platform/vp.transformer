@@ -19,20 +19,19 @@ from rhaptos.cnxmlutils.xml2xhtml import transform_cnxml
 from oerpub.rhaptoslabs.cnxml2htmlpreview.cnxml2htmlpreview import cnxml_to_htmlpreview
 
 import convert as JOD # Imports JOD convert script
-from .models import VPTRoot
 from .no_accent_vietnamese_unicodedata import no_accent_vietnamese
 
 def escape_system(input_string):
     return '"' + input_string.replace('\\', '\\\\').replace('"', '\\"') + '"'
 
-@view_config(context=VPTRoot, renderer='templates/home.pt')
+@view_config(route_name='home', renderer='templates/home.pt')
 def home_view(request):
     """
     Default homepage with help information.
     """
     return {'project': 'vpt.transformer'}
 
-@view_config(context=VPTRoot, name='import')
+@view_config(name='import')
 def import_view(request):
     # get input file from request
     fs = request.POST.get('file')
@@ -188,7 +187,7 @@ def generateVPXML(original_filename='', filenames=[]):
     return content % {'title': original_filename,
                       'created': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-@view_config(context=VPTRoot, name='export')
+@view_config(name='export')
 def export_view(request):
     # get input file from request
     fs = request.POST.get('file')
