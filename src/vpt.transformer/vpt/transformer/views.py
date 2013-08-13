@@ -229,6 +229,9 @@ def export_view(request):
     # Run wkxhtmltopdf to generate a pdf file
     pdfgen = '/usr/bin/wkhtmltopdf'
     input_file_paths = getInputFiles(export_dir_path)
+    input_file_paths, err_msg = getInputFiles(export_dir_path)
+    if err_msg is not None:
+        return Response(err_msg, 500)
     output_filename = '%s.pdf' % os.path.splitext(fs_filename)[0]
     output_file_path = os.path.join(export_dir_path, output_filename)
     strCmd = [pdfgen, '--footer-right', '[page] / [toPage]', '--footer-spacing', '1', '-q']
@@ -266,6 +269,7 @@ def getInputFiles(export_dir_path):
                 ...
     """
     results = []
+    err_msg = None
     # FIXED config filename
     config_filename = 'collection.json'
     config_filepath = os.path.join(export_dir_path, config_filename)
@@ -274,6 +278,11 @@ def getInputFiles(export_dir_path):
             lines = cf.readlines()
             data = ''.join([line.strip('\n').strip() for line in lines])
             collection = json.loads(data)
+            try:
+                collection = json.loads(data)
+            except ValueError, e:
+                err_msg = 'ValueError [parsing collection.json]: %s' % e.message
+                return results, err_msg
             # processing the collection title
             title = collection['title']
             title_filepath = os.path.join(export_dir_path, 'title.html')
@@ -285,7 +294,7 @@ def getInputFiles(export_dir_path):
         # it's a module -> return path to index.html only
         results.append(os.path.join(export_dir_path, 'index.html'))
 
-    return results
+    return results, err_msg
 
 def processCollection(export_dir_path, content, level=0):
     results = []
