@@ -8,14 +8,10 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
     'pyramid',
-    'pyramid_zodbconn',
-    'transaction',
-    'pyramid_tm',
     'pyramid_debugtoolbar',
     'Pillow',
     'lxml',
     'libxml2-python',
-    'ZODB3',
     'waitress',
     'requests',
     'rhaptos.cnxmlutils',
