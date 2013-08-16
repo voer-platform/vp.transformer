@@ -289,21 +289,31 @@ def getInputFiles(export_dir_path):
             createTitlePage(title_filepath, title)
             # add path of title.html into result list
             results.append(title_filepath)
-            results.extend(processCollection(export_dir_path, collection['content'], level=0))
+            data = processCollection(export_dir_path, collection['content'])
+            results.extend(data[0])
+            tocs = data[1]
+            tocs.sort(key=lambda toc: toc[1])
+            # create a toc.html file
+            toc_filename = 'toc.html'
+            toc_filepath = os.path.join(export_dir_path, toc_filename)
+            createTOCPage(toc_filepath, tocs)
+            results.insert(1, toc_filepath)
     except IOError:
         # it's a module -> return path to index.html only
         results.append(os.path.join(export_dir_path, 'index.html'))
 
     return results, err_msg
 
-def processCollection(export_dir_path, content, level=0):
+def processCollection(export_dir_path, content, parents=[]):
     results = []
+    tocs = []
+    i = 0
     for item in content:
-        if level == 0:
+        if len(parents) == 0:
             if item['type'] == 'module':
                 id = item['id']
             else:
-                id = 'subcollection_%d_%d' % (level, content.index(item))
+                id = 'subcollection_%d_%d' % (len(parents), i)
             # create a chapter.html file for first level only
             chapter_filename = 'chapter_%s.html' % id
             chapter_filepath = os.path.join(export_dir_path, chapter_filename)
@@ -311,12 +321,20 @@ def processCollection(export_dir_path, content, level=0):
             createTitlePage(chapter_filepath, chapter_name)
             # add path of chapter_x.html to result list
             results.append(chapter_filepath)
+        i += 1
+        # build data for TOC
+        numbering = '.'.join(parents + [str(i),])
+        toc_str = '%s. %s' % (numbering, item['title'])
+        toc_level = len(parents)
+        tocs.append((toc_level, toc_str))
         if item['type'] == 'module':
             # add path of index.html in each module into result list
             results.append(os.path.join(export_dir_path, item['id'], 'index.html'))
         else:
-            results.extend(processCollection(export_dir_path, item['content'], level=level+1))
-    return results
+            data = processCollection(export_dir_path, item['content'], parents + [str(i),]) 
+            results.extend(data[0])
+            tocs.extend(data[1])
+    return results, tocs
 
 def createTitlePage(filepath, content):
     try:
@@ -327,3 +345,19 @@ def createTitlePage(filepath, content):
     f = open(filepath, 'wb')
     f.write(html)
     f.close()
+
+def createTOCPage(filepath, tocs):
+    html = '<html><body><p><b>Table of Contents:</b></p><ul style="list-style-type: none;">'
+    for toc in tocs:
+        toc_level = toc[0]
+        toc_str = toc[1]
+        try:
+            toc_str = unicode(toc_str, 'utf-8')
+        except TypeError:
+            pass
+        html += '<li>%s%s</li>' % ('&nbsp;&nbsp;&nbsp;&nbsp;'*toc_level, toc_str.encode('ascii', 'xmlcharrefreplace'))
+    html += '</ul></body></html>'
+    f = open(filepath, 'wb')
+    f.write(html)
+    f.close()
+
