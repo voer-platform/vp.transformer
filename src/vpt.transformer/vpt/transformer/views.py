@@ -311,6 +311,12 @@ def getInputFiles(export_dir_path):
         err_msg = data[1]
         extraCmd.extend(data[2])
 
+    # add footer-html with page number only if it's not set previously
+    if '--footer-html' not in extraCmd:
+        footer_filepath = os.path.join(export_dir_path, 'footer.html')
+        createHTMLFooter(footer_filepath)
+        extraCmd.extend(['--footer-html', footer_filepath])
+
     return results, err_msg, extraCmd
 
 def processModule(export_dir_path):
