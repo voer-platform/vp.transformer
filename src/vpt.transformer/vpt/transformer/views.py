@@ -7,6 +7,7 @@ import libxslt
 import zipfile
 import json
 import requests
+import codecs
 
 from cStringIO import StringIO
 from lxml import etree
@@ -228,13 +229,18 @@ def export_view(request):
 
     # Run wkxhtmltopdf to generate a pdf file
     pdfgen = '/usr/bin/wkhtmltopdf'
-    input_file_paths = getInputFiles(export_dir_path)
-    input_file_paths, err_msg = getInputFiles(export_dir_path)
+    input_file_paths, err_msg, extraCmd = getInputFiles(export_dir_path)
     if err_msg is not None:
         return Response(err_msg, 500)
     output_filename = '%s.pdf' % os.path.splitext(fs_filename)[0]
     output_file_path = os.path.join(export_dir_path, output_filename)
-    strCmd = [pdfgen, '--footer-right', '[page] / [toPage]', '--footer-spacing', '1', '-q', '--encoding', 'utf8']
+    strCmd = [pdfgen,
+              '--footer-spacing', '2', '--header-spacing', '5',
+              '--encoding', 'utf8',
+              '-L','25mm', '-T','20mm', '-R','20mm', '-B','20mm',
+              '--user-style-sheet', '%s/pdf.css' % save_dir_path,
+              '-q']
+    strCmd.extend(extraCmd)
     strCmd.extend(input_file_paths)
     strCmd.append(output_file_path)
     env = { }
@@ -270,6 +276,7 @@ def getInputFiles(export_dir_path):
     """
     results = []
     err_msg = None
+    extraCmd = []
     # FIXED config filename
     config_filename = 'collection.json'
     config_filepath = os.path.join(export_dir_path, config_filename)
@@ -281,7 +288,7 @@ def getInputFiles(export_dir_path):
                 collection = json.loads(data)
             except ValueError, e:
                 err_msg = 'ValueError [parsing collection.json]: %s' % e.message
-                return results, err_msg
+                return results, err_msg, extraCmd
             # processing the collection title
             title = collection['title']
             title_filepath = os.path.join(export_dir_path, 'title.html')
@@ -298,10 +305,57 @@ def getInputFiles(export_dir_path):
             createTOCPage(toc_filepath, tocs)
             results.insert(1, toc_filepath)
     except IOError:
-        # it's a module -> return path to index.html only
-        results.append(os.path.join(export_dir_path, 'index.html'))
+        # it's a module
+        data = processModule(export_dir_path)
+        results.extend(data[0])
+        err_msg = data[1]
+        extraCmd.extend(data[2])
 
-    return results, err_msg
+    return results, err_msg, extraCmd
+
+def processModule(export_dir_path):
+    site_name = 'Th&#432; vi&#7879;n H&#7885;c li&#7879;u m&#7903; Vi&#7879;t Nam'
+    results = []
+    err_msg = None
+    # it's a module -> return path to index.html only
+    index_filepath = os.path.join(export_dir_path, 'index.html')
+    results.append(index_filepath)
+    # process metadata
+    extraCmd = []
+    # FIXED metadata filename
+    metadata_filename = 'metadata.json'
+    metadata_filepath = os.path.join(export_dir_path, metadata_filename)
+    try:
+        with open(metadata_filepath, 'rb') as mf:
+            # read metadata from json
+            lines = mf.readlines()
+            data = ''.join([line.strip('\n').strip() for line in lines])
+            try:
+                metadata = json.loads(data)
+            except ValueError, e:
+                err_msg = 'ValueError [parsing metadata.json]: %s' % e.message
+                return results, err_msg, extraCmd
+            # encoding module title
+            title = metadata['title']
+            try:
+                title = unicode(title, 'utf-8')
+            except TypeError:
+                pass
+            title = title.encode('ascii', 'xmlcharrefreplace')
+            # generate html header
+            header_filepath = os.path.join(export_dir_path, 'header.html')
+            createHTMLHeader(header_filepath, '%s - %s' % (title, site_name))
+            extraCmd.extend(['--header-html', header_filepath])
+            # add module url to footer-left
+            footer_filepath = os.path.join(export_dir_path, 'footer.html')
+            createHTMLFooter(footer_filepath, metadata.get('url', ''))
+            extraCmd.extend(['--footer-html', footer_filepath])
+            # update module's index.html
+            updateModuleHTML(index_filepath, metadata)
+    except IOError:
+        # no metadata
+        pass
+    return results, err_msg, extraCmd
 
 def processCollection(export_dir_path, content, parents=[]):
     results = []
@@ -360,3 +414,63 @@ def createTOCPage(filepath, tocs):
     f.write(html)
     f.close()
 
+def createHTMLHeader(filepath, left_text='', right_text=''):
+    html = """
+<html><body>
+<table style="width:100%; color:grey; font-size:10pt;">
+  <tr>
+    <td>{0}</td>
+    <td style="text-align:right">{1}</td>
+  </tr>
+</table>
+</body></html>
+""".format(left_text, right_text)
+    f = open(filepath, 'wb')
+    f.write(html)
+    f.close()
+
+def createHTMLFooter(filepath, left_text='', right_text=''):
+    html = """
+<html><head><script>
+function subst() {
+  var vars={};
+  var x=document.location.search.substring(1).split('&');
+  for (var i in x) {var z=x[i].split('=',2);vars[z[0]] = unescape(z[1]);}
+  var x=['frompage','topage','page','webpage','section','subsection','subsubsection'];
+  for (var i in x) {
+    var y = document.getElementsByClassName(x[i]);
+    for (var j=0; j<y.length; ++j) y[j].textContent = vars[x[i]];
+  }
+}
+</script></head><body style="border:0; margin: 0;" onload="subst()">
+<table style="width: 100%; color:grey; font-size:10pt;">
+  <tr>
+    <td>"""
+    html += left_text
+    html += """</td>
+    <td style="text-align:right">
+      <span class="page"></span> / <span class="topage"></span>
+    </td>
+  </tr>
+</table>
+</body></html>
+"""
+    f = open(filepath, 'wb')
+    f.write(html)
+    f.close()
+
+def updateModuleHTML(filepath, metadata):
+    f = codecs.open(filepath, 'r+', 'utf-8')
+    content = f.read()
+    f.seek(0)
+    # insert module title and authors above content
+    html = """<html><body>
+<h1 class="module-title">%s</h1>
+<div id="authors">
+  <p>B&#7903;i:</p>
+""" % metadata['title']
+    for author in metadata.get('authors', []):
+        html += '<p>%s</p>' % author
+    html += '</div>%s</body></html>' % content
+    f.write(html)
+    f.close()
