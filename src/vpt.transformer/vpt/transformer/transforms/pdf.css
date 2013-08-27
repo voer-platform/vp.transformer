@@ -6,11 +6,8 @@ body {
 h1.module-title {
     font-size: 36pt;
     text-align: center;
-}
-
-#authors {
-    text-align: center;
-    margin-bottom: 40px;
+    margin-top: 24pt;
+    margin-bottom: 12pt;
 }
 
 h1 {
@@ -25,3 +22,21 @@ h3 {
     font-size: 13pt;
     font-style: italic;
 }
+
+p {
+    text-align: justify;
+}
+
+#authors {
+    text-align: center;
+    margin-bottom: 40px;
+}
+#authors div {
+    text-align: center;
+    margin-bottom: 3pt;
+}
+#authors div.by {
+    text-align: center;
+    margin-bottom: 6pt;
+}
+
