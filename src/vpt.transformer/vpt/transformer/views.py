@@ -473,10 +473,10 @@ def updateModuleHTML(filepath, metadata):
     html = """<html><body>
 <h1 class="module-title">%s</h1>
 <div id="authors">
-  <p>B&#7903;i:</p>
+  <div class="by">B&#7903;i:</div>
 """ % metadata['title']
     for author in metadata.get('authors', []):
-        html += '<p>%s</p>' % author
+        html += '<div>%s</div>' % author
     html += '</div>%s</body></html>' % content
     f.write(html)
     f.close()
