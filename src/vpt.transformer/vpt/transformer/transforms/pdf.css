@@ -3,11 +3,16 @@ body {
     font-size: 13pt;
 }
 
-h1.module-title {
-    font-size: 36pt;
-    text-align: center;
-    margin-top: 24pt;
-    margin-bottom: 12pt;
+table {
+    margin: 1em 0;
+    border-collapse:collapse;
+}
+tr td {
+    border-color: #999999;
+    border-width: 20px;
+    border-collapse:collapse;
+    border-style:solid;
+    padding: 0.3em;
 }
 
 h1 {
@@ -27,16 +32,72 @@ p {
     text-align: justify;
 }
 
-#authors {
+/*** Title page ***/
+h1.module-title {
+    font-size: 36pt;
+    text-align: center;
+    margin-top: 24pt;
+    margin-bottom: 12pt;
+}
+h1.collection-title, h1.chapter-title {
+    font-size: 26pt;
+    text-align: center;
+    margin-top: 200pt;
+    margin-bottom: 60pt;
+}
+h1.title2 {
+    margin-top: 160pt !important;
+    margin-bottom: 50pt !important;
+}
+
+#authors, #editors {
     text-align: center;
     margin-bottom: 40px;
 }
-#authors div {
+#authors div, #editors div {
     text-align: center;
     margin-bottom: 3pt;
 }
-#authors div.by {
+#authors div.by, #editors div.by {
     text-align: center;
     margin-bottom: 6pt;
 }
+.coll-by {
+    font-weight: bold;
+}
+
+#collection-link {
+    text-align: center;
+    margin-top: 50px;
+}
+/*** end Title page ***/
+
+/*** TOC page ***/
+h1#menu {
+    font-size: 16pt;
+}
+
+ul.tocs {
+    list-style-type: none;
+}
+ul.tocs li.level-0 {
+    font-weight: bold;
+}
+ul.tocs li {
+    margin-bottom: 3pt;
+}
+/*** end TOC page ***/
+
+/*** Contribution page ***/
+h1.contrib-title {
+    font-size: 18pt;
+}
+
+.coll-contrib div, .module-contrib div {
+    margin-bottom: 6pt;
+}
+.module-contrib {
+    margin-top: 12pt;
+}
+/*** end Contribution page ***/
 

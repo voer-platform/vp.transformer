@@ -289,21 +289,35 @@ def getInputFiles(export_dir_path):
             except ValueError, e:
                 err_msg = 'ValueError [parsing collection.json]: %s' % e.message
                 return results, err_msg, extraCmd
-            # processing the collection title
+            # processing the title page
             title = collection['title']
+            editors = collection.get('editors')
             title_filepath = os.path.join(export_dir_path, 'title.html')
-            createTitlePage(title_filepath, title)
+            createTitlePage(title_filepath, title, editors)
             # add path of title.html into result list
             results.append(title_filepath)
+            # recursively process collection content
             data = processCollection(export_dir_path, collection['content'])
-            results.extend(data[0])
+            authors = data[2]
+            # processing the title page 2
+            title_filepath2 = os.path.join(export_dir_path, 'title2.html')
+            createTitlePage(title_filepath2, title, editors, authors, collection.get('url'), collection.get('version'))
+            # add path of title2.html into result list
+            results.append(title_filepath2)
             tocs = data[1]
             tocs.sort(key=lambda toc: toc[1])
             # create a toc.html file
             toc_filename = 'toc.html'
             toc_filepath = os.path.join(export_dir_path, toc_filename)
             createTOCPage(toc_filepath, tocs)
-            results.insert(1, toc_filepath)
+            results.append(toc_filepath)
+            # add path of modules index.html into result list
+            results.extend(data[0])
+            # processing contribution page
+            contrib_filename = 'contrib.html'
+            contrib_filepath = os.path.join(export_dir_path, contrib_filename)
+            createContributionPage(contrib_filepath, collection, data[3])
+            results.append(contrib_filepath)
     except IOError:
         # it's a module
         data = processModule(export_dir_path)
@@ -366,6 +380,8 @@ def processModule(export_dir_path):
 def processCollection(export_dir_path, content, parents=[]):
     results = []
     tocs = []
+    authors = set()
+    modules = [] # list of module metadata
     i = 0
     for item in content:
         if len(parents) == 0:
@@ -377,7 +393,7 @@ def processCollection(export_dir_path, content, parents=[]):
             chapter_filename = 'chapter_%s.html' % id
             chapter_filepath = os.path.join(export_dir_path, chapter_filename)
             chapter_name = item['title']
-            createTitlePage(chapter_filepath, chapter_name)
+            createChapterTitlePage(chapter_filepath, chapter_name)
             # add path of chapter_x.html to result list
             results.append(chapter_filepath)
         i += 1
@@ -387,26 +403,59 @@ def processCollection(export_dir_path, content, parents=[]):
         toc_level = len(parents)
         tocs.append((toc_level, toc_str))
         if item['type'] == 'module':
+            authors.update(item.get('authors', []))
+            modules.append(item)
             # add path of index.html in each module into result list
             results.append(os.path.join(export_dir_path, item['id'], 'index.html'))
         else:
             data = processCollection(export_dir_path, item['content'], parents + [str(i),]) 
             results.extend(data[0])
             tocs.extend(data[1])
-    return results, tocs
+            authors.update(data[2])
+            modules.extend(data[3])
+    return results, tocs, authors, modules
 
-def createTitlePage(filepath, content):
+def createTitlePage(filepath, title, editors=None, authors=None, url=None, version=None):
+    html = u'<html><body><h1 class="collection-title %s">%s</h1>' % (authors and 'title2' or '', title)
+    # insert editors
+    if editors:
+        html += u"""<div id="editors">
+  <div class="by coll-by">Bi&#234;n t&#7853;p b&#7903;i:</div>"""
+        for editor in editors:
+            html += u'<div>%s</div>' % editor
+        html += u'</div>'
+    # insert authors
+    if authors:
+        html += u"""<div id="authors">
+  <div class="by coll-by">C&#225;c t&#225;c gi&#7843;:</div>"""
+        for author in authors:
+            html += u'<div>%s</div>' % author
+        html += u'</div>'
+    # insert link
+    if url:
+        if version: url = '/'.join([url.rstrip('/'), version])
+        html += u"""<div id="collection-link">
+  <div>Phi&#234;n b&#7843;n tr&#7921;c tuy&#7871;n:</div>"""
+        html += u'<div>{link} <a href="%s">%s</a></div>' % (url, url)
+        html += u'</div>'
+    # end html
+    html += u'</body></html>'
+    f = codecs.open(filepath, 'wb', 'utf-8')
+    f.write(html)
+    f.close()
+
+def createChapterTitlePage(filepath, content):
     try:
         content = unicode(content, 'utf-8')
     except TypeError:
         pass
-    html = '<html><body><center><h1 style="margin-top:250px">%s</h1></center></body></html>' % content.encode('ascii', 'xmlcharrefreplace')
+    html = '<html><body><h1 class="chapter-title">%s</h1></body></html>' % content.encode('ascii', 'xmlcharrefreplace')
     f = open(filepath, 'wb')
     f.write(html)
     f.close()
 
 def createTOCPage(filepath, tocs):
-    html = '<html><body><p><b>Table of Contents:</b></p><ul style="list-style-type: none;">'
+    html = '<html><body><h1 id="menu">M&#7908;C L&#7908;C</h1><ul class="tocs">'
     for toc in tocs:
         toc_level = toc[0]
         toc_str = toc[1]
@@ -414,12 +463,41 @@ def createTOCPage(filepath, tocs):
             toc_str = unicode(toc_str, 'utf-8')
         except TypeError:
             pass
-        html += '<li>%s%s</li>' % ('&nbsp;&nbsp;&nbsp;&nbsp;'*toc_level, toc_str.encode('ascii', 'xmlcharrefreplace'))
-    html += '</ul></body></html>'
+        html += '<li class="level-%d">%s%s</li>' % (toc_level, '&nbsp;&nbsp;&nbsp;&nbsp;'*toc_level, toc_str.encode('ascii', 'xmlcharrefreplace'))
+    html += '<li class="level-0">Tham gia &#273;&#243;ng g&#243;p</li></ul></body></html>'
     f = open(filepath, 'wb')
     f.write(html)
     f.close()
 
+def createContributionPage(filepath, collection, modules):
+    html = """<html><body>
+  <h1 class="contrib-title">Tham gia &#273;&#243;ng g&#243;p</h1>
+  <div class="coll-contrib">
+    <div>T&#224;i li&#7879;u: %s</div>""" % collection['title']
+    html += '<div>Bi&#234;n so&#7841;n b&#7903;i: '
+    editors = ''
+    for editor in collection.get('editors', []):
+        editors += '%s, ' % editor
+    html += editors.rstrip(', ') + '</div>'
+    html += '<div>URL: %s/%s</div>' % (collection.get('url', ''), collection.get('version', ''))
+    html += '<div>Gi&#7845;y ph&#233;p: %s</div>' % collection.get('license', '')
+    for module in modules:
+        html += '<div class="module-contrib">'
+        html += '<div>Module: %s</div>' % module['title']
+        html += '<div>T&#225;c gi&#7843;: '
+        authors = ''
+        for author in module.get('authors', []):
+            authors += '%s, ' % author
+        html += authors.rstrip(', ') + '</div>'
+        html += '<div>URL: %s/%s</div>' % (module.get('url', ''), module.get('version', ''))
+        html += '<div>Gi&#7845;y ph&#233;p: %s</div>' % module.get('license', '')
+        html += '</div>'
+    html += '</div>'
+    html += '</body></html>'
+    f = codecs.open(filepath, 'wb', 'utf-8')
+    f.write(html)
+    f.close()
+    
 def createHTMLHeader(filepath, left_text='', right_text=''):
     html = """
 <html><body>
