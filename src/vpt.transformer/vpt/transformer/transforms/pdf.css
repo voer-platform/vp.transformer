@@ -32,6 +32,10 @@ p {
     text-align: justify;
 }
 
+ul {
+    padding-left: 0;
+}
+
 /*** Title page ***/
 h1.module-title {
     font-size: 36pt;
