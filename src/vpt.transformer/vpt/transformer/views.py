@@ -20,6 +20,7 @@ from rhaptos.cnxmlutils.xml2xhtml import transform_cnxml
 from oerpub.rhaptoslabs.cnxml2htmlpreview.cnxml2htmlpreview import cnxml_to_htmlpreview
 
 import convert as JOD # Imports JOD convert script
+from .tasks import process_import
 from .no_accent_vietnamese_unicodedata import no_accent_vietnamese
 
 def escape_system(input_string):
@@ -39,6 +40,8 @@ def import_view(request):
     # get token and client id from request
     token = request.POST.get('token')
     cid = request.POST.get('cid')
+    # get celery task id from request
+    task_id = request.params.get('task_id')
 
     # validate inputs
     error = validate_inputs(fs, token, cid)
@@ -51,61 +54,38 @@ def import_view(request):
     # handle vietnamese filename
     fs_filename = no_accent_vietnamese(fs.filename)
 
-    # save the original file so that we can convert, plus keep it.
-    now_string = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    original_filename = '%s-%s' % (now_string, fs_filename)
-    original_filepath = str(os.path.join(save_dir_path, original_filename))
-    saved_file = open(original_filepath, 'wb')
-    input_file = fs.file
-    shutil.copyfileobj(input_file, saved_file)
-    saved_file.close()
-    input_file.close()
+    if task_id:
+        # check the status of celery task
+        result = process_import.AsyncResult(task_id)
+        # get the status
+        msg = result.status
+        if result.successful():
+            # get the result of the task (an download url)
+            msg = result.get()
+        elif result.failed():
+            # running task got error
+            return Response('Conversion Error', 500)
+        return Response(msg)
+    else:
+        # save the original file so that we can convert, plus keep it.
+        now_string = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+        original_filename = '%s-%s' % (now_string, fs_filename)
+        original_filepath = str(os.path.join(save_dir_path, original_filename))
+        saved_file = open(original_filepath, 'wb')
+        input_file = fs.file
+        shutil.copyfileobj(input_file, saved_file)
+        saved_file.close()
+        input_file.close()
 
-    # convert from other office format to odt
-    filename, extension = os.path.splitext(original_filename)
-    odt_filename = '%s.odt' % filename
-    odt_filepath = str(os.path.join(save_dir_path, odt_filename))
-    # run jod service
-    converter = JOD.DocumentConverterClient()
-    try:
-        converter.convert(original_filepath, 'odt', odt_filepath)
-    except Exception as e:
-        print e
+        # get the filename without extension
+        filename, extension = os.path.splitext(original_filename)
 
-    # check file existed
-    try:
-        fp = open(odt_filepath, 'r')
-        fp.close()
-    except IOError as io:
-        # TODO: raise exception
-        return Response('Conversion Error', 500)
+        # generate the expected download url of converted file
+        download_url = request.static_url('transforms/%s.zip' % filename)
 
-    # convert to cnxml
-    tree, files, errors = transform(odt_filepath)
-    cnxml = clean_cnxml(etree.tostring(tree))
-
-    # convert to html
-    html = cnxml_to_htmlpreview(cnxml)
-
-    # produce zipfile
-    ram = StringIO()
-    zip_archive = zipfile.ZipFile(ram, 'w')
-    # uncomment this if you need a vpxml
-    #zip_archive.writestr('index.vpxml', generateVPXML(filename, files.keys()))
-    zip_archive.writestr('index.html', html)
-    for fname, fdata in files.items():
-        zip_archive.writestr(fname, fdata)
-    zip_archive.close()
-
-    # save zipfile
-    zip_file_path = os.path.join(save_dir_path, '%s.zip' % filename)
-    if os.path.exists(zip_file_path):
-        os.rename(zip_file_path, zip_file_path + '~')
-    f = open(zip_file_path, 'wb')
-    f.write(ram.getvalue())
-    f.close()
-
-    return Response(content_type='application/octet-stream', body=ram.getvalue())
+    	# call celery task
+    	result = process_import.delay(save_dir_path, original_filepath, filename, download_url)
+    	return Response(result.task_id)
 
 # Pretty CNXML printing with libxml2 because etree/lxml cannot do pretty printing semantic correct
 def clean_cnxml(iCnxml, iMaxColumns=80):
