@@ -9,6 +9,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 requires = [
     'pyramid',
     'pyramid_debugtoolbar',
+    'pyramid_celery',
     'Pillow',
     'lxml',
     'libxml2-python',
