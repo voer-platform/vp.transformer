@@ -11,6 +11,7 @@ from vpt.transformer.views import export_view
 class ViewTests(unittest.TestCase):
     def setUp(self):
         self.config = testing.setUp()
+        self.config.add_static_view('transforms', path='vpt.transformer:transforms')
 
     def tearDown(self):
         testing.tearDown()
@@ -29,7 +30,7 @@ class ViewTests(unittest.TestCase):
         # make FieldStorage for POST request
         fs = cgi.FieldStorage()
         fs.name = 'file'
-        fs.filename = 'C1.doc'
+        fs.filename = 'C1-test.doc'
         fs.file = fs.make_file()
         fs.file.write(data)
         fs.file.seek(0)
@@ -43,6 +44,7 @@ class ViewTests(unittest.TestCase):
         response = import_view(request)
         self.assertEqual(response.status_code, 200)
 
+#    def export_view(self, test_filename='C1.zip'):
     def test_export_view(self, test_filename='C1.zip'):
         current_path = os.path.abspath(os.path.dirname(__file__))
         parent_path = os.path.abspath(os.path.dirname(current_path))
@@ -68,4 +70,5 @@ class ViewTests(unittest.TestCase):
 
     def test_export_colletion(self):
     	self.test_export_view(test_filename='collection.zip')
+#    	self.export_view(test_filename='collection.zip')
 
