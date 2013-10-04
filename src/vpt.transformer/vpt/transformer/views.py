@@ -43,17 +43,6 @@ def import_view(request):
     # get celery task id from request
     task_id = request.params.get('task_id')
 
-    # validate inputs
-    error = validate_inputs(fs, token, cid)
-    if error is not None:
-        return Response(error[0], error[1])
-
-    # path to filestorages
-    save_dir_path = request.registry.settings['transform_dir']
-
-    # handle vietnamese filename
-    fs_filename = no_accent_vietnamese(fs.filename)
-
     if task_id:
         # check the status of celery task
         result = process_import.AsyncResult(task_id)
@@ -67,6 +56,17 @@ def import_view(request):
             return Response('Conversion Error', 500)
         return Response(msg)
     else:
+        # validate inputs
+        error = validate_inputs(fs, token, cid)
+        if error is not None:
+            return Response(error[0], error[1])
+    
+        # path to filestorages
+        save_dir_path = request.registry.settings['transform_dir']
+    
+        # handle vietnamese filename
+        fs_filename = no_accent_vietnamese(fs.filename)
+
         # save the original file so that we can convert, plus keep it.
         now_string = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         original_filename = '%s-%s' % (now_string, fs_filename)
