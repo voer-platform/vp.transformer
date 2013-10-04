@@ -5,7 +5,7 @@ if __name__ == '__main__':
     """
     Send HTTP POST requests to vpt apis to test.
     """
-    host = 'dev.voer.vn'
+    host = 'localhost'
     port = '6543'
     import_url = 'http://%s:%s/import' % (host, port)
     export_url = 'http://%s:%s/export' % (host, port)
@@ -19,11 +19,11 @@ if __name__ == '__main__':
     files = {'file': (filename, filedata)}
     r = requests.post(import_url, files=files, data=payload)
     print 'Importing ... \n'
-    print r.status_code
+    print r.text
 
-    filename = 'test.zip'
-    filedata = open('vpt/transformer/tests/test_files/C1.zip', 'rb').read()
-    files = {'file': (filename, filedata)}
-    r = requests.post(export_url, files=files, data=payload)
-    print '\nExporting ... \n'
-    print r.status_code
+#    filename = 'test.zip'
+#    filedata = open('vpt/transformer/tests/test_files/C1.zip', 'rb').read()
+#    files = {'file': (filename, filedata)}
+#    r = requests.post(export_url, files=files, data=payload)
+#    print '\nExporting ... \n'
+#    print r.status_code
