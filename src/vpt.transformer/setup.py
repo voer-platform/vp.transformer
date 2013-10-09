@@ -10,6 +10,7 @@ requires = [
     'pyramid',
     'pyramid_debugtoolbar',
     'pyramid_celery',
+    'cornice',
     'Pillow',
     'lxml',
     'libxml2-python',
