@@ -14,6 +14,10 @@ from lxml import etree
 
 from pyramid.view import view_config
 from pyramid.response import Response
+import webob
+from webob import exc
+
+from cornice import Service
 
 from rhaptos.cnxmlutils.odt2cnxml import transform
 from rhaptos.cnxmlutils.xml2xhtml import transform_cnxml
@@ -22,6 +26,14 @@ from oerpub.rhaptoslabs.cnxml2htmlpreview.cnxml2htmlpreview import cnxml_to_html
 import convert as JOD # Imports JOD convert script
 from .tasks import process_import
 from .no_accent_vietnamese_unicodedata import no_accent_vietnamese
+
+class HTTPError(exc.HTTPError):
+    def __init__(self, status, msg, traceback=''):
+        body = {'status': status, 'message': msg}
+        if traceback: body['error'] = traceback
+        webob.Response.__init__(self, json.dumps(body))
+        self.status = status
+        self.content_type = 'application/json'
 
 def escape_system(input_string):
     return '"' + input_string.replace('\\', '\\\\').replace('"', '\\"') + '"'
@@ -33,7 +45,10 @@ def home_view(request):
     """
     return {'project': 'vpt.transformer'}
 
-@view_config(name='import')
+imp = Service(name='import', path='/import',
+                 description="Convert doc to html")
+@imp.get()
+@imp.post()
 def import_view(request):
     # get input file from request
     fs = request.POST.get('file')
@@ -47,19 +62,19 @@ def import_view(request):
         # check the status of celery task
         result = process_import.AsyncResult(task_id)
         # get the status
-        msg = result.status
+        status = result.status
         if result.successful():
             # get the result of the task (an download url)
-            msg = result.get()
+            return {'status': status, 'url': result.get()}
         elif result.failed():
             # running task got error
-            return Response('Conversion Error', 500)
-        return Response(msg)
+            raise HTTPError(500, 'Conversion Error', result.traceback)
+        return {'status': status}
     else:
         # validate inputs
         error = validate_inputs(fs, token, cid)
         if error is not None:
-            return Response(error[0], error[1])
+            raise HTTPError(error[1], error[0])
     
         # path to filestorages
         save_dir_path = request.registry.settings['transform_dir']
@@ -85,7 +100,7 @@ def import_view(request):
 
     	# call celery task
     	result = process_import.delay(save_dir_path, original_filepath, filename, download_url)
-    	return Response(result.task_id)
+    	return {'status': result.status, 'task_id': result.task_id}
 
 # Pretty CNXML printing with libxml2 because etree/lxml cannot do pretty printing semantic correct
 def clean_cnxml(iCnxml, iMaxColumns=80):
