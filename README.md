@@ -91,7 +91,29 @@ Send a POST request that contains the file to be import.
     cid = <your client id>
     file = <... binary data of your file here ...>
 
-When imported successful, it returns a zip file of html and images.
+The response of POST request will return a json with task_id information which you can use to ping for import status. Example of returned json:
+
+    HTTP/1.1 200 OK
+    {'status': 'PENDING', 'task_id': 'e35c4124-b0e3-4d15-93de-802a88d9effc'}
+
+To ping for import status, send a GET request as follow.
+
+    GET $URL/import?task_id=<task_id>
+
+If conversion is still in process, it will return a json with PENDING status only.
+    
+    HTTP/1.1 200 OK
+    {"status": "PENDING"}
+
+When imported successful, returned json will contained an URL to the zip file of html and images.
+
+    HTTP/1.1 200 OK
+    {"status": "SUCCESS", "url": "http://localhost:6543/transforms/20131010-171144-test.zip"}
+
+When imported failed, it will return a HTTP 500 Response and may contain a full traceback of the error.
+
+    HTTP/1.1 500
+    {"status": 500, "message": "Conversion Error", "error": <fuul traceback>}
 
 Export
 ------
@@ -109,6 +131,7 @@ When exported successful, it returns a file of your expected output (only pdf no
 Example code in python:
 
     import requests
+    import json
 
     host = 'localhost'
     port = '6543'
@@ -119,13 +142,26 @@ Example code in python:
     cid = 'vietdt'
     payload = {'token': token, 'cid': cid}
 
+    # test import
     filename = 'test.doc'
     filedata = open('vpt/transformer/tests/test_files/C1.doc', 'rb').read()
     files = {'file': (filename, filedata)}
     r = requests.post(import_url, files=files, data=payload)
+    result = json.loads(r.text)
     print 'Importing ... \n'
-    print r.status_code
+    print r.text
 
+    # ping import status
+    if result.has_key('task_id')
+    r = requests.get(import_url+'?task_id='+result['task_id'])
+    result = json.loads(r.text)
+    if result.has_key('url'):
+        print result['url']
+    elif r.status_code != 200:
+        print result.get('message')
+        print result.get('error')
+
+    # test export
     filename = 'test.zip'
     filedata = open('vpt/transformer/tests/test_files/C1.zip', 'rb').read()
     files = {'file': (filename, filedata)}
