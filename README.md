@@ -81,52 +81,36 @@ If there's any problem, you may have to compile your self. see: http://code.goog
 Using the API
 =============
 
-Import
-------
+Send a POST request that contains the file to be import/export.
 
-Send a POST request that contains the file to be import.
-
-    POST $URL/import
+    POST $URL/[import|export]
     token = <your given token>
     cid = <your client id>
     file = <... binary data of your file here ...>
 
-The response of POST request will return a json with task_id information which you can use to ping for import status. Example of returned json:
+The response of POST request will return a json with task_id information which you can use to ping for import/export status. Example of returned json:
 
     HTTP/1.1 200 OK
     {'status': 'PENDING', 'task_id': 'e35c4124-b0e3-4d15-93de-802a88d9effc'}
 
-To ping for import status, send a GET request as follow.
+To ping for import/export status, send a GET request as follow.
 
-    GET $URL/import?task_id=<task_id>
+    GET $URL/[import/export]?task_id=<task_id>
 
 If conversion is still in process, it will return a json with PENDING status only.
     
     HTTP/1.1 200 OK
     {"status": "PENDING"}
 
-When imported successful, returned json will contained an URL to the zip file of html and images.
+When imported/exported successful, returned json will contained an URL to the output file (compressed html and images for import or pdf for export).
 
     HTTP/1.1 200 OK
     {"status": "SUCCESS", "url": "http://localhost:6543/transforms/20131010-171144-test.zip"}
 
-When imported failed, it will return a HTTP 500 Response and may contain a full traceback of the error.
+When imported/exported failed, it will return a HTTP 500 Response and may contain a full traceback of the error.
 
     HTTP/1.1 500
-    {"status": 500, "message": "Conversion Error", "error": <fuul traceback>}
-
-Export
-------
-
-Send a POST request that contains the input file to be export.
-
-    POST $URL/export
-    token = <your given token>
-    cid = <your client id>
-    output = <your expected output type e.g. pdf>
-    file = <... binary data of your file here ...>
-
-When exported successful, it returns a file of your expected output (only pdf now supported).
+    {"status": 500, "message": "Conversion Error", "error": <full traceback>}
 
 Example code in python:
 
