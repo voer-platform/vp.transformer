@@ -102,87 +102,6 @@ def import_view(request):
     	result = process_import.delay(save_dir_path, original_filepath, filename, download_url)
     	return {'status': result.status, 'task_id': result.task_id}
 
-# Pretty CNXML printing with libxml2 because etree/lxml cannot do pretty printing semantic correct
-def clean_cnxml(iCnxml, iMaxColumns=80):
-    current_dir = os.path.dirname(__file__)
-
-    # WORKAROUND - fix bug: duplicated figures show on top after imported docx
-    xsl = etree.parse(os.path.join(current_dir, 'cleanup.xsl'))
-    xslt = etree.XSLT(xsl)
-    xml = etree.fromstring(iCnxml)
-    xml = xslt(xml)
-    iCnxml = etree.tostring(xml)
-
-    xsl = os.path.join(current_dir, 'utils_pretty.xsl')
-    style_doc = libxml2.parseFile(xsl)
-    style = libxslt.parseStylesheetDoc(style_doc)
-    doc = libxml2.parseDoc(iCnxml)
-    result = style.applyStylesheet(doc, None)
-    pretty_cnxml = style.saveResultToString(result)
-    style.freeStylesheet()
-    doc.freeDoc()
-    result.freeDoc()
-    return pretty_cnxml
-
-def validate_inputs(fs, token, cid):
-    # TODO: validate mimetypes
-    # TODO: validate file size
-    if fs is None:
-        return ('File Not Found', 404)
-    if not hasattr(fs, 'filename'):
-        return ('File Error', 500)
-#    if token is None:
-#        return ('Token Not Found', 404)
-#    if cid is None:
-#        return ('Client Id Not Found', 404)
-#    if not isValidToken(token, cid):
-#        return ('Invalid Token', 401)
-    # if no errors
-    return None
-
-def isValidToken(token, cid):
-    base_url = 'http://dev.voer.vn:2013/1/token'
-    url = '%s/%s/?cid=%s' % (base_url, token, cid)
-    r = requests.get(url)
-    if r.status_code == 200:
-        return True
-    return False
-
-# not used, should be removed then
-def generateVPXML(original_filename='', filenames=[]):
-    content = """
-<?xml version="1.0"?>
-<vpxml xmlns="http://voer.edu.vn/vpxml" vdp_version="1.0">
-    <title>%(title)s</title>
-
-    <metadata>    
-       <type>module</type>
-       <version>1.0</version>
-       <origin>VOER CMS</origin>
-       <created>%(created)s<created>
-       <modified></modified>
-       <license></license>
-    </metadata>
-
-    <files>"""
-    for filename in filenames:
-        content += """
-       <file id="%s">
-           <path>content/%s</path>
-       </file>""" % (filename, filename)
-    content += """
-    </files>
-
-    <order>"""
-    for filename in filenames:
-        content += """
-       <file_id>%s</file_id>""" % filename
-    content += """
-    </order>
-</vpxml>"""
-    return content % {'title': original_filename,
-                      'created': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
 exp = Service(name='export', path='/export',
                  description="Convert zipped html to pdf")
 @exp.get()
@@ -249,3 +168,26 @@ def export_view(request):
         result = process_export.delay(save_dir_path, export_dir_path, output_file_path, download_url)
         return {'status': result.status, 'task_id': result.task_id}
 
+def validate_inputs(fs, token, cid):
+    # TODO: validate mimetypes
+    # TODO: validate file size
+    if fs is None:
+        return ('File Not Found', 404)
+    if not hasattr(fs, 'filename'):
+        return ('File Error', 500)
+#    if token is None:
+#        return ('Token Not Found', 404)
+#    if cid is None:
+#        return ('Client Id Not Found', 404)
+#    if not isValidToken(token, cid):
+#        return ('Invalid Token', 401)
+    # if no errors
+    return None
+
+def isValidToken(token, cid):
+    base_url = 'http://dev.voer.vn:2013/1/token'
+    url = '%s/%s/?cid=%s' % (base_url, token, cid)
+    r = requests.get(url)
+    if r.status_code == 200:
+        return True
+    return False

@@ -69,6 +69,14 @@ def process_import(save_dir_path, original_filepath, filename, download_url):
 # Pretty CNXML printing with libxml2 because etree/lxml cannot do pretty printing semantic correct
 def clean_cnxml(iCnxml, iMaxColumns=80):
     current_dir = os.path.dirname(__file__)
+
+    # WORKAROUND - fix bug: duplicated figures show on top after imported docx
+    xsl = etree.parse(os.path.join(current_dir, 'cleanup.xsl'))
+    xslt = etree.XSLT(xsl)
+    xml = etree.fromstring(iCnxml)
+    xml = xslt(xml)
+    iCnxml = etree.tostring(xml)
+    
     xsl = os.path.join(current_dir, 'utils_pretty.xsl')
     style_doc = libxml2.parseFile(xsl)
     style = libxslt.parseStylesheetDoc(style_doc)
