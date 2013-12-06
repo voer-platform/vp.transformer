@@ -1,4 +1,5 @@
 import os
+import re
 import datetime
 import shutil
 import subprocess
@@ -94,7 +95,7 @@ def process_export(save_dir_path, export_dir_path, output_file_path, download_ur
 
     # Run wkxhtmltopdf to generate a pdf file
     pdfgen = '/usr/bin/wkhtmltopdf'
-    input_file_paths, err_msg, extraCmd = getInputFiles(export_dir_path)
+    input_file_paths, err_msg, extraCmd = getInputFiles(export_dir_path, save_dir_path)
     if err_msg is not None:
         raise Exception(err_msg)
     strCmd = [pdfgen,
@@ -119,7 +120,7 @@ def process_export(save_dir_path, export_dir_path, output_file_path, download_ur
 
     return download_url
 
-def getInputFiles(export_dir_path):
+def getInputFiles(export_dir_path, save_dir_path=''):
     """
     Return a list of path to index.html and chapter.html files if it's a collection.
     Return turn the path to index.html only if it's a module.
@@ -160,7 +161,7 @@ def getInputFiles(export_dir_path):
             # add path of title.html into result list
             results.append(title_filepath)
             # recursively process collection content
-            data = processCollection(export_dir_path, collection['content'])
+            data = processCollection(export_dir_path, collection['content'], save_dir_path=save_dir_path)
             authors = data[2]
             # processing the title page 2
             title_filepath2 = os.path.join(export_dir_path, 'title2.html')
@@ -168,7 +169,7 @@ def getInputFiles(export_dir_path):
             # add path of title2.html into result list
             results.append(title_filepath2)
             tocs = data[1]
-            tocs.sort(key=lambda toc: toc[1])
+            tocs.sort(key=lambda toc: toc[2])
             # create a toc.html file
             toc_filename = 'toc.html'
             toc_filepath = os.path.join(export_dir_path, toc_filename)
@@ -240,7 +241,7 @@ def processModule(export_dir_path):
         pass
     return results, err_msg, extraCmd
 
-def processCollection(export_dir_path, content, parents=[]):
+def processCollection(export_dir_path, content, parents=[], save_dir_path=''):
     results = []
     tocs = []
     authors = set()
@@ -261,17 +262,21 @@ def processCollection(export_dir_path, content, parents=[]):
             results.append(chapter_filepath)
         i += 1
         # build data for TOC
+        numbers = [int(n) for n in (parents + [str(i),])]
         numbering = '.'.join(parents + [str(i),])
         toc_str = '%s. %s' % (numbering, item['title'])
         toc_level = len(parents)
-        tocs.append((toc_level, toc_str))
+        tocs.append((toc_level, toc_str, numbers))
         if item['type'] == 'module':
             authors.update(item.get('authors', []))
             modules.append(item)
+            index_filepath = os.path.join(export_dir_path, item['id'], 'index.html')
+            # update module's index.html
+            updateModuleHTML(index_filepath, save_dir_path=save_dir_path)
             # add path of index.html in each module into result list
-            results.append(os.path.join(export_dir_path, item['id'], 'index.html'))
+            results.append(index_filepath)
         else:
-            data = processCollection(export_dir_path, item['content'], parents + [str(i),]) 
+            data = processCollection(export_dir_path, item['content'], parents + [str(i),], save_dir_path) 
             results.extend(data[0])
             tocs.extend(data[1])
             authors.update(data[2])
@@ -299,7 +304,7 @@ def createTitlePage(filepath, title, editors=None, authors=None, url=None, versi
         if version: url = '/'.join([url.rstrip('/'), version])
         html += u"""<div id="collection-link">
   <div>Phi&#234;n b&#7843;n tr&#7921;c tuy&#7871;n:</div>"""
-        html += u'<div>{link} <a href="%s">%s</a></div>' % (url, url)
+        html += u'<div><a href="%s">%s</a></div>' % (url, url)
         html += u'</div>'
     # end html
     html += u'</body></html>'
@@ -406,19 +411,31 @@ function subst() {
     f.write(html)
     f.close()
 
-def updateModuleHTML(filepath, metadata):
+def updateModuleHTML(filepath, metadata=None, save_dir_path=''):
     f = codecs.open(filepath, 'r+', 'utf-8')
     content = f.read()
     f.seek(0)
-    # insert module title and authors above content
-    html = """<html><body>
-<h1 class="module-title">%s</h1>
-<div id="authors">
-  <div class="by">B&#7903;i:</div>
-""" % metadata['title']
-    for author in metadata.get('authors', []):
-        html += '<div>%s</div>' % author
-    html += '</div>%s</body></html>' % content
+    # remove self-closing tags
+    content = re.sub(r'<em[^>]+?/>', r'', content)
+    content = re.sub(r'<strong[^>]+?/>', r'', content)
+    html = """<html>
+<head>
+    <script type="text/javascript"
+        src="%s/display-mathml.js"></script>
+</head>
+<body>""" % save_dir_path
+
+    if metadata:
+        # insert module title and authors above content
+        html = """<h1 class="module-title">%s</h1>
+    <div id="authors">
+      <div class="by">B&#7903;i:</div>
+    """ % metadata['title']
+        for author in metadata.get('authors', []):
+            html += '<div>%s</div>' % author
+        html += '</div>'
+
+    html += """%s</body></html>""" % content
     f.write(html)
     f.close()
 
