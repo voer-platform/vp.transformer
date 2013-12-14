@@ -1,3 +1,17 @@
+@page {
+    margin: 20mm 25mm 20mm 30mm;
+
+    @top-left {
+        content: string(moduletitle)
+    }
+    @bottom-right {
+        content: counter(page) "/" counter(pages);
+    }
+}
+
+/* set moduletitle string */
+h1.module-title { string-set: moduletitle content() }
+
 body {
     font-family: Times New Roman;
     font-size: 13pt;
@@ -9,7 +23,7 @@ table {
 }
 tr td {
     border-color: #999999;
-    border-width: 20px;
+    border-width: 1px;
     border-collapse:collapse;
     border-style:solid;
     padding: 0.3em;
