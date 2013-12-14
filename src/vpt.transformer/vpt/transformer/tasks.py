@@ -93,20 +93,16 @@ def clean_cnxml(iCnxml, iMaxColumns=80):
 def process_export(save_dir_path, export_dir_path, output_file_path, download_url):
     print 'processing export'
 
-    # Run wkxhtmltopdf to generate a pdf file
-    pdfgen = '/usr/bin/wkhtmltopdf'
+    # Run princexml to generate a pdf file
+    pdfgen = '/usr/local/bin/prince'
     input_file_paths, err_msg, extraCmd = getInputFiles(export_dir_path, save_dir_path)
     if err_msg is not None:
         raise Exception(err_msg)
-    strCmd = [pdfgen,
-              '--footer-spacing', '2', '--header-spacing', '5',
-              '--encoding', 'utf8',
-              '-L','25mm', '-T','20mm', '-R','20mm', '-B','20mm',
-              '--user-style-sheet', '%s/pdf.css' % save_dir_path,
-              '-q']
-    strCmd.extend(extraCmd)
+    strCmd = [pdfgen, '-i', 'html5',
+              '-s', '%s/pdf.css' % save_dir_path]
+    #strCmd.extend(extraCmd)
     strCmd.extend(input_file_paths)
-    strCmd.append(output_file_path)
+    strCmd.extend(['-o', output_file_path])
     env = { }
     # run the program with subprocess and pipe the input and output to variables
     p = subprocess.Popen(strCmd, close_fds=True, env=env)
