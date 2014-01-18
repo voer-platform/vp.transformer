@@ -297,7 +297,7 @@ def createTitlePage(filepath, title, editors=None, authors=None, url=None, versi
         html += u'</div>'
     # insert link
     if url:
-        if version: url = '/'.join([url.rstrip('/'), version])
+        if version: url = '/'.join([url.rstrip('/'), str(version)])
         html += u"""<div id="collection-link">
   <div>Phi&#234;n b&#7843;n tr&#7921;c tuy&#7871;n:</div>"""
         html += u'<div><a href="%s">%s</a></div>' % (url, url)
