@@ -9,6 +9,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 requires = [
     'pyramid',
     'pyramid_debugtoolbar',
+    'celery==3.0.19',
     'pyramid_celery',
     'cornice',
     'Pillow',

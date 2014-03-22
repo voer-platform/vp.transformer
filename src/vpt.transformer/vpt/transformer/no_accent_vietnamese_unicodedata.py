@@ -11,6 +11,7 @@ def no_accent_vietnamese(s):
     s = s.decode('utf-8')
     s = re.sub(u'Đ', 'D', s)
     s = re.sub(u'đ', 'd', s)
+    s = re.sub(u' ', '_', s)
     return unicodedata.normalize('NFKD', unicode(s)).encode('ASCII', 'ignore')
 
 if __name__ == '__main__':

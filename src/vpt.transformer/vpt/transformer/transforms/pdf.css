@@ -1,3 +1,34 @@
+@page {
+    margin: 20mm 25mm 20mm 30mm;
+
+    @top-left {
+        content: string(moduletitle)
+    }
+    @bottom-right {
+        content: counter(page) "/" counter(pages);
+    }
+}
+
+/* hide page count on title pages */
+#title-page {
+    page: title-page;
+    counter-reset: pages 0;
+}
+@page title-page {
+    @bottom-right {
+        content: "";
+    }
+    background: transparent url("images/cc-by.jpeg") 50% 90% no-repeat;
+}
+
+/* reset page counter on TOC page */
+#toc {
+    counter-reset: page 1;
+}
+
+/* set moduletitle string */
+h1.module-title { string-set: moduletitle content() }
+
 body {
     font-family: Times New Roman;
     font-size: 13pt;
@@ -9,7 +40,7 @@ table {
 }
 tr td {
     border-color: #999999;
-    border-width: 20px;
+    border-width: 1px;
     border-collapse:collapse;
     border-style:solid;
     padding: 0.3em;
@@ -64,6 +95,15 @@ h1.title2 {
     margin-top: 160pt !important;
     margin-bottom: 50pt !important;
 }
+h1.section-title.level-0 {
+    font-size: 24pt;
+}
+h1.section-title.level-1 {
+    font-size: 18pt;
+}
+h1.section-title.level-2 {
+    font-size: 14pt;
+}
 
 #authors, #editors {
     text-align: center;
@@ -94,12 +134,16 @@ h1#menu {
 
 ul.tocs {
     list-style-type: none;
+    margin-left: 0;
+    padding-left: 0;
 }
 ul.tocs li.level-0 {
-    font-weight: bold;
+    font-weight: normal;
 }
 ul.tocs li {
     margin-bottom: 3pt;
+    margin-left: 0;
+    padding-left: 0;
 }
 /*** end TOC page ***/
 
