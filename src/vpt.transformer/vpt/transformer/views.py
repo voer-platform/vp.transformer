@@ -12,10 +12,13 @@ import codecs
 from cStringIO import StringIO
 from lxml import etree
 
-from pyramid.view import view_config
-from pyramid.response import Response
 import webob
 from webob import exc
+
+from pyramid.view import view_config
+from pyramid.response import Response
+from pyramid.interfaces import ITranslationDirectories
+from pyramid.threadlocal import get_current_registry
 
 from cornice import Service
 
@@ -164,8 +167,15 @@ def export_view(request):
         # generate the expected download url of converted file
         download_url = request.static_url('transforms/%s/%s' % (filename, output_filename))
 
+        # get translation dirs for making localizer object
+        try:
+            registry = request.registry
+        except AttributeError:
+            registry = get_current_registry()
+        tdirs = registry.queryUtility(ITranslationDirectories, default=[])
+
         # call celery task
-        result = process_export.delay(save_dir_path, export_dir_path, output_file_path, download_url)
+        result = process_export.delay(save_dir_path, export_dir_path, output_file_path, download_url, tdirs)
         return {'status': result.status, 'task_id': result.task_id}
 
 def validate_inputs(fs, token, cid):
