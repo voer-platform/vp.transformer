@@ -145,6 +145,9 @@ ul.tocs li {
     margin-left: 0;
     padding-left: 0;
 }
+ul.tocs li a {
+    text-decoration: none;
+}
 /*** end TOC page ***/
 
 /*** Contribution page ***/
