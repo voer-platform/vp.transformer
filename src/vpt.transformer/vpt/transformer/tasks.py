@@ -18,10 +18,11 @@ from oerpub.rhaptoslabs.cnxml2htmlpreview.cnxml2htmlpreview import cnxml_to_html
 
 import convert as JOD # Imports JOD convert script
 
+from pyramid.i18n import TranslationStringFactory, make_localizer
+_ = TranslationStringFactory('transformer')
+
 @task
 def process_import(save_dir_path, original_filepath, filename, download_url):
-    print 'processing import'
-
     # convert from other office format to odt
     odt_filename = '%s.odt' % filename
     odt_filepath = str(os.path.join(save_dir_path, odt_filename))
@@ -88,12 +89,10 @@ def clean_cnxml(iCnxml, iMaxColumns=80):
     return pretty_cnxml
 
 @task
-def process_export(save_dir_path, export_dir_path, output_file_path, download_url):
-    print 'processing export'
-
+def process_export(save_dir_path, export_dir_path, output_file_path, download_url, translation_dirs):
     # Run princexml to generate a pdf file
     pdfgen = '/usr/local/bin/prince'
-    input_file_paths, err_msg, extraCmd = getInputFiles(export_dir_path, save_dir_path)
+    input_file_paths, err_msg, extraCmd = getInputFiles(export_dir_path, save_dir_path, translation_dirs)
     if err_msg is not None:
         raise Exception(err_msg)
     strCmd = [pdfgen, '-i', 'html5',
@@ -114,7 +113,7 @@ def process_export(save_dir_path, export_dir_path, output_file_path, download_ur
 
     return download_url
 
-def getInputFiles(export_dir_path, save_dir_path=''):
+def getInputFiles(export_dir_path, save_dir_path='', translation_dirs=[]):
     """
     Return a list of path to index.html and chapter.html files if it's a collection.
     Return turn the path to index.html only if it's a module.
@@ -150,16 +149,20 @@ def getInputFiles(export_dir_path, save_dir_path=''):
             # processing the title page
             title = collection['title']
             editors = collection.get('editors')
+            language = collection.get('language', 'vi')
+            # making localizer for i18n translation
+            localizer = make_localizer(language, translation_dirs)
             title_filepath = os.path.join(export_dir_path, 'title.html')
-            createTitlePage(title_filepath, title, editors, save_dir_path=save_dir_path)
+            createTitlePage(title_filepath, title, editors, save_dir_path=save_dir_path, localizer=localizer)
             # add path of title.html into result list
             results.append(title_filepath)
             # recursively process collection content
-            data = processCollection(export_dir_path, collection['content'], save_dir_path=save_dir_path)
+            data = processCollection(export_dir_path, collection['content'], save_dir_path=save_dir_path, localizer=localizer)
             authors = data[2]
             # processing the title page 2
             title_filepath2 = os.path.join(export_dir_path, 'title2.html')
-            createTitlePage(title_filepath2, title, editors, authors, collection.get('url'), collection.get('version'), save_dir_path=save_dir_path)
+            createTitlePage(title_filepath2, title, editors, authors, collection.get('url'),
+                            collection.get('version'), save_dir_path=save_dir_path, localizer=localizer)
             # add path of title2.html into result list
             results.append(title_filepath2)
             tocs = data[1]
@@ -167,29 +170,29 @@ def getInputFiles(export_dir_path, save_dir_path=''):
             # create a toc.html file
             toc_filename = 'toc.html'
             toc_filepath = os.path.join(export_dir_path, toc_filename)
-            createTOCPage(toc_filepath, tocs)
+            createTOCPage(toc_filepath, tocs, localizer=localizer)
             results.append(toc_filepath)
             # add path of modules index.html into result list
             results.extend(data[0])
             # processing contribution page
             contrib_filename = 'contrib.html'
             contrib_filepath = os.path.join(export_dir_path, contrib_filename)
-            createContributionPage(contrib_filepath, collection, data[3])
+            createContributionPage(contrib_filepath, collection, data[3], localizer=localizer)
             results.append(contrib_filepath)
             # add end page
-            endfile_name = 'end_%s.html' % collection.get('language', 'en')
+            endfile_name = 'end_%s.html' % language
             endfile_path = os.path.join(save_dir_path, endfile_name)
             results.append(endfile_path)
     except IOError:
         # it's a module
-        data = processModule(export_dir_path)
+        data = processModule(export_dir_path, localizer=localizer)
         results.extend(data[0])
         err_msg = data[1]
         extraCmd.extend(data[2])
 
     return results, err_msg, extraCmd
 
-def processModule(export_dir_path):
+def processModule(export_dir_path, localizer=None):
     results = []
     err_msg = None
     # it's a module -> return path to index.html only
@@ -218,13 +221,13 @@ def processModule(export_dir_path):
                 pass
             title = title.encode('ascii', 'xmlcharrefreplace')
             # update module's index.html
-            updateModuleHTML(index_filepath, metadata)
+            updateModuleHTML(index_filepath, metadata, localizer=localizer)
     except IOError:
         # no metadata
         pass
     return results, err_msg, extraCmd
 
-def processCollection(export_dir_path, content, parents=[], save_dir_path=''):
+def processCollection(export_dir_path, content, parents=[], save_dir_path='', localizer=None):
     results = []
     tocs = []
     authors = set()
@@ -255,7 +258,7 @@ def processCollection(export_dir_path, content, parents=[], save_dir_path=''):
             else:
                 section_titles = []
             section_titles.append([item['title'], toc_level])
-            updateModuleHTML(index_filepath, save_dir_path=save_dir_path, section_titles=section_titles)
+            updateModuleHTML(index_filepath, save_dir_path=save_dir_path, section_titles=section_titles, localizer=localizer)
             # add path of index.html in each module into result list
             results.append(index_filepath)
         else:
@@ -264,7 +267,7 @@ def processCollection(export_dir_path, content, parents=[], save_dir_path=''):
                 title = item['title'],
                 level = toc_level
             )
-            data = processCollection(export_dir_path, item['content'], parents + [parent,], save_dir_path)
+            data = processCollection(export_dir_path, item['content'], parents + [parent,], save_dir_path, localizer=localizer)
             results.extend(data[0])
             tocs.extend(data[1])
             authors.update(data[2])
@@ -282,27 +285,23 @@ def getParentTitles(parents):
         if parent.get('number', 0) <> 1: break
     return titles[::-1]
 
-def createTitlePage(filepath, title, editors=None, authors=None, url=None, version=None, save_dir_path=''):
-    # WORKAROUND: add div for title page and logo
-    #html = u'<html><body><h1 class="collection-title %s">%s</h1>' % (authors and 'title2' or '', title)
+def createTitlePage(filepath, title, editors=None, authors=None, url=None, version=None, save_dir_path='', localizer=None):
     logo_path = os.path.join(save_dir_path, 'images/VOER.logo.jpeg')
     html = u'<html><body><div id="title-page"><div class="logo"><center><img src="%s" width="155" /></center></div>' % logo_path
     html += u'<h1 class="collection-title %s">%s</h1>' % (authors and 'title2' or '', title)
     # insert editors
     if editors:
+        lbl_edited_by = localizer.translate(_('edited-by', default='Edited by'))
         html += u"""<div id="editors">
-  <div class="by coll-by">Edit by:</div>"""
-    # WORKAROUND
-    # <div class="by coll-by">Bi&#234;n t&#7853;p b&#7903;i:</div>"""
+  <div class="by coll-by">%s:</div>""" % lbl_edited_by
         for editor in editors:
             html += u'<div>%s</div>' % editor
         html += u'</div>'
     # insert authors
     if authors:
+        lbl_authors = localizer.translate(_('authors', default='Authors'))
         html += u"""<div id="authors">
-  <div class="by coll-by">Authors:</div>"""
-    # WORKAROUND
-    # <div class="by coll-by">C&#225;c t&#225;c gi&#7843;:</div>"""
+  <div class="by coll-by">%s:</div>""" % lbl_authors
         for author in authors:
             html += u'<div>%s</div>' % author
         html += u'</div>'
@@ -310,10 +309,9 @@ def createTitlePage(filepath, title, editors=None, authors=None, url=None, versi
     if url:
         # WORKAROUND: hide version from url
         #if version: url = '/'.join([url.rstrip('/'), str(version)])
+        lbl_ol_ver = localizer.translate(_('online-version', default='Online version'))
         html += u"""<div id="collection-link">
-  <div>Online version:</div>"""
-    # WORKAROUND
-    # <div>Phi&#234;n b&#7843;n tr&#7921;c tuy&#7871;n:</div>"""
+  <div>%s:</div>""" % lbl_ol_ver
         html += u'<div><a href="%s">%s</a></div>' % (url, url)
         html += u'</div>'
     # end html
@@ -324,10 +322,9 @@ def createTitlePage(filepath, title, editors=None, authors=None, url=None, versi
     f.write(html)
     f.close()
 
-def createTOCPage(filepath, tocs):
-    # WORKAROUND: en version and div for toc
-    #html = '<html><body><h1 id="menu">M&#7908;C L&#7908;C</h1><ul class="tocs">'
-    html = '<html><body><div id="toc"><h1 id="menu">Outline</h1><ul class="tocs">'
+def createTOCPage(filepath, tocs, localizer=None):
+    lbl_outline = localizer.translate(_('outline', default='Outline'))
+    html = '<html><body><div id="toc"><h1 id="menu">%s</h1><ul class="tocs">' % lbl_outline
     for toc in tocs:
         toc_level = toc[0]
         toc_str = toc[1]
@@ -335,41 +332,43 @@ def createTOCPage(filepath, tocs):
             toc_str = unicode(toc_str, 'utf-8')
         except TypeError:
             pass
-        # TEMP: add link to module index.html file
-        #html += '<li class="level-%d">%s%s</li>' % (toc_level, '&nbsp;&nbsp;&nbsp;&nbsp;'*toc_level, toc_str.encode('ascii', 'xmlcharrefreplace'))
         module_index_file_path = ''
         if toc[3]:
             module_index_file_path = '%s/index.html' % toc[3]
         html += '<li class="level-%d">%s<a href="%s">%s</a></li>' % (toc_level, '&nbsp;&nbsp;&nbsp;&nbsp;'*toc_level, module_index_file_path, toc_str.encode('ascii', 'xmlcharrefreplace'))
-    # WORKAROUND: hide it and add div for toc
-    #html += '<li class="level-0">Tham gia &#273;&#243;ng g&#243;p</li></ul></body></html>'
-    html += '</ul></div></body></html>'
-    f = open(filepath, 'wb')
+    lbl_contrib = localizer.translate(_('contribution', default='Contribution'))
+    html += '<li class="level-0"><a href="#">%s</a></li></ul></div></body></html>' % lbl_contrib
+    f = codecs.open(filepath, 'wb', 'utf-8')
     f.write(html)
     f.close()
 
-def createContributionPage(filepath, collection, modules):
+def createContributionPage(filepath, collection, modules, localizer=None):
+    lbl_contrib = localizer.translate(_('contribution', default='Contribution'))
+    lbl_coll = localizer.translate(_('collection', default='Collection'))
     html = """<html><body>
-  <h1 class="contrib-title">Tham gia &#273;&#243;ng g&#243;p</h1>
+  <h1 class="contrib-title">%s</h1>
   <div class="coll-contrib">
-    <div>T&#224;i li&#7879;u: %s</div>""" % collection['title']
-    html += '<div>Bi&#234;n so&#7841;n b&#7903;i: '
+    <div>%s: %s</div>""" % (lbl_contrib, lbl_coll, collection['title'])
+    lbl_edited_by = localizer.translate(_('edited-by', default='Edited by'))
+    html += '<div>%s: ' % lbl_edited_by
     editors = ''
     for editor in collection.get('editors', []):
         editors += '%s, ' % editor
     html += editors.rstrip(', ') + '</div>'
-    html += '<div>URL: %s/%s</div>' % (collection.get('url', ''), collection.get('version', ''))
-    html += '<div>Gi&#7845;y ph&#233;p: %s</div>' % collection.get('license', '')
+    html += '<div>URL: %s</div>' % collection.get('url', '')
+    lbl_license = localizer.translate(_('license', default='License'))
+    html += '<div>%s: %s</div>' % (lbl_license, collection.get('license', ''))
     for module in modules:
         html += '<div class="module-contrib">'
         html += '<div>Module: %s</div>' % module['title']
-        html += '<div>T&#225;c gi&#7843;: '
+        lbl_authors = localizer.translate(_('authors', default='Authors'))
+        html += '<div>%s: ' % lbl_authors
         authors = ''
         for author in module.get('authors', []):
             authors += '%s, ' % author
         html += authors.rstrip(', ') + '</div>'
-        html += '<div>URL: %s/%s</div>' % (module.get('url', ''), module.get('version', ''))
-        html += '<div>Gi&#7845;y ph&#233;p: %s</div>' % module.get('license', '')
+        html += '<div>URL: %s</div>' % module.get('url', '')
+        html += '<div>%s: %s</div>' % (lbl_license, module.get('license', ''))
         html += '</div>'
     html += '</div>'
     html += '</body></html>'
@@ -377,7 +376,7 @@ def createContributionPage(filepath, collection, modules):
     f.write(html)
     f.close()
 
-def updateModuleHTML(filepath, metadata=None, save_dir_path='', section_titles=[]):
+def updateModuleHTML(filepath, metadata=None, save_dir_path='', section_titles=[], localizer=None):
     f = codecs.open(filepath, 'r+', 'utf-8')
     content = f.read()
     f.seek(0)
@@ -391,10 +390,11 @@ def updateModuleHTML(filepath, metadata=None, save_dir_path='', section_titles=[
 
     if metadata:
         # insert module title and authors above content
+        lbl_by = localizer.translate(_('by', default='By'))
         html += """<h1 class="module-title">%s</h1>
     <div id="authors">
-      <div class="by">B&#7903;i:</div>
-    """ % metadata['title']
+      <div class="by">%s:</div>
+    """ % (lbl_by, metadata['title'])
         for author in metadata.get('authors', []):
             html += '<div>%s</div>' % author
         html += '</div>'
