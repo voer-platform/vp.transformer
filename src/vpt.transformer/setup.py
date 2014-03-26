@@ -16,6 +16,8 @@ requires = [
     'lxml',
     'libxml2-python',
     'waitress',
+    'Babel',
+    'lingua',
     'requests',
     'rhaptos.cnxmlutils',
     'pytidylib', # required by rhaptos.cnxmlutils
@@ -46,4 +48,8 @@ setup(name='vpt.transformer',
       [paste.app_factory]
       main = vpt.transformer:main
       """,
+      message_extractors = { '.': [
+        ('**.py',   'lingua_python', None ),
+        ('**.pt',   'lingua_xml', None ),
+      ]},
       )
