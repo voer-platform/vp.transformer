@@ -1,0 +1,60 @@
+# Vietnamese translations for vpt.transformer.
+# Copyright (C) 2014 ORGANIZATION
+# This file is distributed under the same license as the vpt.transformer
+# project.
+# Viet Dinh <vietdt@gmail.com>, 2014.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: vpt.transformer 0.0\n"
+"Report-Msgid-Bugs-To: vietdt@gmail.com\n"
+"POT-Creation-Date: 2014-03-27 05:45+0700\n"
+"PO-Revision-Date: 2014-03-26 23:49+0700\n"
+"Last-Translator: Viet Dinh <vietdt@gmail.com>\n"
+"Language-Team: vi <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 1.3\n"
+
+#. Default: Edited by
+#: transformer/tasks.py:294 transformer/tasks.py:352
+msgid "edited-by"
+msgstr "Biên tập bởi"
+
+#. Default: Authors
+#: transformer/tasks.py:302 transformer/tasks.py:364
+msgid "authors"
+msgstr "Các tác giả"
+
+#. Default: Online version
+#: transformer/tasks.py:312
+msgid "online-version"
+msgstr "Phiên bản trực tuyến"
+
+#. Default: Outline
+#: transformer/tasks.py:326
+msgid "outline"
+msgstr "MỤC LỤC"
+
+#. Default: Contribution
+#: transformer/tasks.py:339 transformer/tasks.py:346
+msgid "contribution"
+msgstr "Tham gia đóng góp"
+
+#. Default: Collection
+#: transformer/tasks.py:347
+msgid "collection"
+msgstr "Tài liệu"
+
+#. Default: License
+#: transformer/tasks.py:359
+msgid "license"
+msgstr "Giấy phép"
+
+#. Default: By
+#: transformer/tasks.py:393
+msgid "by"
+msgstr "Bởi"
+
