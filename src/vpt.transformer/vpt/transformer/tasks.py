@@ -185,6 +185,18 @@ def getInputFiles(export_dir_path, save_dir_path='', translation_dirs=[]):
             results.append(endfile_path)
     except IOError:
         # it's a module
+        metadata_filepath = os.path.join(export_dir_path, 'metadata.json')
+        with open(metadata_filepath, 'rb') as mf:
+            lines = mf.readlines()
+            json_data = ''.join([line.strip('\n').strip() for line in lines])
+            try:
+                metadata = json.loads(json_data)
+            except ValueError, e:
+                err_msg = 'ValueError [parsing metadata.json]: %s' % e.message
+                return results, err_msg, extraCmd
+        language = metadata.get('language', 'vi')
+        # making localizer for i18n translation
+        localizer = make_localizer(language, translation_dirs)
         data = processModule(export_dir_path, localizer=localizer)
         results.extend(data[0])
         err_msg = data[1]
@@ -394,7 +406,7 @@ def updateModuleHTML(filepath, metadata=None, save_dir_path='', section_titles=[
         html += """<h1 class="module-title">%s</h1>
     <div id="authors">
       <div class="by">%s:</div>
-    """ % (lbl_by, metadata['title'])
+    """ % (metadata['title'], lbl_by)
         for author in metadata.get('authors', []):
             html += '<div>%s</div>' % author
         html += '</div>'
