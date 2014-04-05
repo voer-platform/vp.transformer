@@ -259,7 +259,8 @@ def processCollection(export_dir_path, content, parents=[], save_dir_path='', lo
         toc_str = '%s. %s' % (numbering, item['title'])
         toc_level = len(parents)
         # add module id to toc to build href
-        tocs.append((toc_level, toc_str, numbers, item.get('id')))
+        toc_module_id = getModuleId4TOC(item)
+        tocs.append((toc_level, toc_str, numbers, toc_module_id))
         if item['type'] == 'module':
             authors.update(item.get('authors', []))
             modules.append(item)
@@ -285,6 +286,17 @@ def processCollection(export_dir_path, content, parents=[], save_dir_path='', lo
             authors.update(data[2])
             modules.extend(data[3])
     return results, tocs, authors, modules
+
+def getModuleId4TOC(data):
+    """
+    Input: json metadata of sub-collection/module
+    Output: nearest module id
+    """
+    if data['type'] == 'module':
+        return data.get('id')
+    elif data.has_key('content') and len(data['content']) > 0:
+        return getModuleId4TOC(data['content'][0])
+    return None
 
 def getParentTitles(parents):
     """
@@ -349,7 +361,7 @@ def createTOCPage(filepath, tocs, localizer=None):
             module_index_file_path = '%s/index.html' % toc[3]
         html += '<li class="level-%d">%s<a href="%s">%s</a></li>' % (toc_level, '&nbsp;&nbsp;&nbsp;&nbsp;'*toc_level, module_index_file_path, toc_str.encode('ascii', 'xmlcharrefreplace'))
     lbl_contrib = localizer.translate(_('contribution', default='Contribution'))
-    html += '<li class="level-0"><a href="#">%s</a></li></ul></div></body></html>' % lbl_contrib
+    html += '<li class="level-0"><a href="contrib.html">%s</a></li></ul></div></body></html>' % lbl_contrib
     f = codecs.open(filepath, 'wb', 'utf-8')
     f.write(html)
     f.close()
@@ -397,19 +409,21 @@ def updateModuleHTML(filepath, metadata=None, save_dir_path='', section_titles=[
     content = re.sub(r'<strong[^>]+?/>', r'', content)
     # TEMP: remove display-math.js
     html = """<html>
-<head></head>
-<body>"""
+<head></head>"""
 
-    if metadata:
+    if metadata: # it's module export
         # insert module title and authors above content
         lbl_by = localizer.translate(_('by', default='By'))
-        html += """<h1 class="module-title">%s</h1>
+        html += """<body class="module-export">
+    <h1 class="module-title">%s</h1>
     <div id="authors">
       <div class="by">%s:</div>
     """ % (metadata['title'], lbl_by)
         for author in metadata.get('authors', []):
             html += '<div>%s</div>' % author
         html += '</div>'
+    else:
+        html += """<body class="collection-export">"""
 
     for section_title in section_titles:
         # insert section title (for collection export only)
