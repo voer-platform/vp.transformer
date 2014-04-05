@@ -48,15 +48,18 @@ tr td {
 
 h1 {
     font-size: 14pt;
+    prince-bookmark-level: none;
 }
 
 h2 {
     font-size: 13pt;
+    prince-bookmark-level: none;
 }
 
 h3 {
     font-size: 13pt;
     font-style: italic;
+    prince-bookmark-level: none;
 }
 
 p {
@@ -97,12 +100,25 @@ h1.title2 {
 }
 h1.section-title.level-0 {
     font-size: 24pt;
+    prince-bookmark-level: 1;
 }
 h1.section-title.level-1 {
     font-size: 18pt;
+    prince-bookmark-level: 2;
 }
 h1.section-title.level-2 {
     font-size: 14pt;
+    prince-bookmark-level: 3;
+}
+h1.section-title.level-3 {
+    prince-bookmark-level: 4;
+}
+
+.module-export h1 {
+    prince-bookmark-level: 1;
+}
+.module-export h2 {
+    prince-bookmark-level: 2;
 }
 
 #authors, #editors {
