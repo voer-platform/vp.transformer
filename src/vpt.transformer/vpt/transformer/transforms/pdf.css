@@ -114,7 +114,7 @@ h1.section-title.level-3 {
     prince-bookmark-level: 4;
 }
 
-.module-export h1 {
+.module-export h1, h1.contrib-title {
     prince-bookmark-level: 1;
 }
 .module-export h2 {
