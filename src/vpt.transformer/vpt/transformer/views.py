@@ -106,14 +106,14 @@ def import_view(request):
     	return {'status': result.status, 'task_id': result.task_id}
 
 exp = Service(name='export', path='/export',
-                 description="Convert zipped html to pdf")
+                 description="Convert zipped html to pdf or epub")
 @exp.get()
 @exp.post()
 def export_view(request):
     # get input file from request
     fs = request.POST.get('file')
     # get export type
-    output_type = request.POST.get('output')
+    output_type = request.POST.get('output', 'pdf')
     # get token and client id from request
     token = request.POST.get('token')
     cid = request.POST.get('cid')
@@ -161,7 +161,7 @@ def export_view(request):
         os.mkdir(export_dir_path)
         zip_archive.extractall(path=export_dir_path)
 
-        output_filename = '%s.pdf' % os.path.splitext(fs_filename)[0]
+        output_filename = '%s.%s' % (os.path.splitext(fs_filename)[0], output_type)
         output_file_path = os.path.join(export_dir_path, output_filename)
 
         # generate the expected download url of converted file
@@ -175,7 +175,9 @@ def export_view(request):
         tdirs = registry.queryUtility(ITranslationDirectories, default=[])
 
         # call celery task
-        result = process_export.delay(save_dir_path, export_dir_path, output_file_path, download_url, tdirs)
+        result = process_export.delay(output_type, save_dir_path, export_dir_path, output_file_path, download_url, tdirs)
+        #result = process_export(output_type, save_dir_path, export_dir_path, output_file_path, download_url, tdirs)
+        #return result
         return {'status': result.status, 'task_id': result.task_id}
 
 def validate_inputs(fs, token, cid):
