@@ -89,15 +89,28 @@ def clean_cnxml(iCnxml, iMaxColumns=80):
     return pretty_cnxml
 
 @task
-def process_export(save_dir_path, export_dir_path, output_file_path, download_url, translation_dirs):
-    # Run princexml to generate a pdf file
-    pdfgen = '/usr/local/bin/prince'
-    input_file_paths, err_msg, extraCmd = getInputFiles(export_dir_path, save_dir_path, translation_dirs)
+def process_export(output_type, save_dir_path, export_dir_path, output_file_path, download_url, translation_dirs):
+    input_file_paths, err_msg = getInputFiles(output_type, export_dir_path, save_dir_path, translation_dirs)
     if err_msg is not None:
         raise Exception(err_msg)
+
+    if output_type == 'pdf':
+        process_pdf(save_dir_path, export_dir_path, output_file_path, input_file_paths)
+    else:
+        process_epub(save_dir_path, export_dir_path, output_file_path, input_file_paths)
+
+    # get exported file
+    rf = open(output_file_path, 'r')
+    body = rf.read()
+    rf.close()
+
+    return download_url
+
+def process_pdf(save_dir_path, export_dir_path, output_file_path, input_file_paths):
+    # Run princexml to generate a pdf file
+    pdfgen = '/usr/local/bin/prince'
     strCmd = [pdfgen, '-i', 'html5',
               '-s', '%s/pdf.css' % save_dir_path]
-    #strCmd.extend(extraCmd)
     strCmd.extend(input_file_paths)
     strCmd.extend(['-o', output_file_path])
     env = { }
@@ -106,14 +119,19 @@ def process_export(save_dir_path, export_dir_path, output_file_path, download_ur
     # set STDIN and STDOUT and wait untill the program finishes
     _, stdErr = p.communicate()
 
-    # get exported file and return the response
-    rf = open(output_file_path, 'r')
-    body = rf.read()
-    rf.close()
+def process_epub(save_dir_path, export_dir_path, output_file_path, input_file_paths):
+    # Run ebook-convert (calibre) to generate a epub file
+    epubgen = '/usr/bin/ebook-convert'
+    strCmd = [epubgen,]
+    strCmd.extend(input_file_paths)
+    strCmd.extend([output_file_path, '--no-default-epub-cover', '--max-toc-links=0'])
+    env = { }
+    # run the program with subprocess and pipe the input and output to variables
+    p = subprocess.Popen(strCmd, close_fds=True, env=env)
+    # set STDIN and STDOUT and wait untill the program finishes
+    _, stdErr = p.communicate()
 
-    return download_url
-
-def getInputFiles(export_dir_path, save_dir_path='', translation_dirs=[]):
+def getInputFiles(output_type, export_dir_path, save_dir_path='', translation_dirs=[]):
     """
     Return a list of path to index.html and chapter.html files if it's a collection.
     Return turn the path to index.html only if it's a module.
@@ -133,7 +151,6 @@ def getInputFiles(export_dir_path, save_dir_path='', translation_dirs=[]):
     """
     results = []
     err_msg = None
-    extraCmd = []
     # FIXED config filename
     config_filename = 'collection.json'
     config_filepath = os.path.join(export_dir_path, config_filename)
@@ -145,7 +162,7 @@ def getInputFiles(export_dir_path, save_dir_path='', translation_dirs=[]):
                 collection = json.loads(data)
             except ValueError, e:
                 err_msg = 'ValueError [parsing collection.json]: %s' % e.message
-                return results, err_msg, extraCmd
+                return results, err_msg
             # processing the title page
             title = collection['title']
             editors = collection.get('editors')
@@ -172,6 +189,8 @@ def getInputFiles(export_dir_path, save_dir_path='', translation_dirs=[]):
             toc_filepath = os.path.join(export_dir_path, toc_filename)
             createTOCPage(toc_filepath, tocs, localizer=localizer)
             results.append(toc_filepath)
+            # epub export only need toc file
+            return [toc_filepath, ], err_msg
             # add path of modules index.html into result list
             results.extend(data[0])
             # processing contribution page
@@ -193,16 +212,15 @@ def getInputFiles(export_dir_path, save_dir_path='', translation_dirs=[]):
                 metadata = json.loads(json_data)
             except ValueError, e:
                 err_msg = 'ValueError [parsing metadata.json]: %s' % e.message
-                return results, err_msg, extraCmd
+                return results, err_msg
         language = metadata.get('language', 'vi')
         # making localizer for i18n translation
         localizer = make_localizer(language, translation_dirs)
         data = processModule(export_dir_path, localizer=localizer)
         results.extend(data[0])
         err_msg = data[1]
-        extraCmd.extend(data[2])
 
-    return results, err_msg, extraCmd
+    return results, err_msg
 
 def processModule(export_dir_path, localizer=None):
     results = []
@@ -211,7 +229,6 @@ def processModule(export_dir_path, localizer=None):
     index_filepath = os.path.join(export_dir_path, 'index.html')
     results.append(index_filepath)
     # process metadata
-    extraCmd = []
     # FIXED metadata filename
     metadata_filename = 'metadata.json'
     metadata_filepath = os.path.join(export_dir_path, metadata_filename)
@@ -224,7 +241,7 @@ def processModule(export_dir_path, localizer=None):
                 metadata = json.loads(data)
             except ValueError, e:
                 err_msg = 'ValueError [parsing metadata.json]: %s' % e.message
-                return results, err_msg, extraCmd
+                return results, err_msg
             # encoding module title
             title = metadata['title']
             try:
@@ -237,7 +254,7 @@ def processModule(export_dir_path, localizer=None):
     except IOError:
         # no metadata
         pass
-    return results, err_msg, extraCmd
+    return results, err_msg
 
 def processCollection(export_dir_path, content, parents=[], save_dir_path='', localizer=None):
     results = []
@@ -348,7 +365,7 @@ def createTitlePage(filepath, title, editors=None, authors=None, url=None, versi
 
 def createTOCPage(filepath, tocs, localizer=None):
     lbl_outline = localizer.translate(_('outline', default='Outline'))
-    html = '<html><body><div id="toc"><h1 id="menu">%s</h1><ul class="tocs">' % lbl_outline
+    html = '<html><head></head><body><div id="toc"><h1 id="menu">%s</h1><ul class="tocs">' % lbl_outline
     for toc in tocs:
         toc_level = toc[0]
         toc_str = toc[1]
