@@ -101,9 +101,9 @@ def import_view(request):
         # generate the expected download url of converted file
         download_url = request.static_url('transforms/%s.zip' % filename)
 
-    	# call celery task
-    	result = process_import.delay(save_dir_path, original_filepath, filename, download_url)
-    	return {'status': result.status, 'task_id': result.task_id}
+        # call celery task
+        result = process_import.delay(save_dir_path, original_filepath, filename, download_url)
+        return {'status': result.status, 'task_id': result.task_id}
 
 exp = Service(name='export', path='/export',
                  description="Convert zipped html to pdf or epub")
