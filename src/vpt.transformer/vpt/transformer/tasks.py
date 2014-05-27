@@ -124,7 +124,8 @@ def process_epub(save_dir_path, export_dir_path, output_file_path, input_file_pa
     epubgen = '/usr/bin/ebook-convert'
     strCmd = [epubgen,]
     strCmd.extend(input_file_paths)
-    strCmd.extend([output_file_path, '--no-default-epub-cover', '--max-toc-links=0'])
+    strCmd.extend([output_file_path, '--no-default-epub-cover', '--no-chapters-in-toc',
+                   '--level1-toc', '//h:li[@class="level-0"]'])
     env = { }
     # run the program with subprocess and pipe the input and output to variables
     p = subprocess.Popen(strCmd, close_fds=True, env=env)
@@ -189,8 +190,6 @@ def getInputFiles(output_type, export_dir_path, save_dir_path='', translation_di
             toc_filepath = os.path.join(export_dir_path, toc_filename)
             createTOCPage(toc_filepath, tocs, localizer=localizer)
             results.append(toc_filepath)
-            # epub export only need toc file
-            return [toc_filepath, ], err_msg
             # add path of modules index.html into result list
             results.extend(data[0])
             # processing contribution page
@@ -202,6 +201,9 @@ def getInputFiles(output_type, export_dir_path, save_dir_path='', translation_di
             endfile_name = 'end_%s.html' % language
             endfile_path = os.path.join(save_dir_path, endfile_name)
             results.append(endfile_path)
+            if output_type == 'epub':
+                # epub export only need toc file
+                return [toc_filepath, ], err_msg
     except IOError:
         # it's a module
         metadata_filepath = os.path.join(export_dir_path, 'metadata.json')
