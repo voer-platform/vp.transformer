@@ -125,7 +125,9 @@ def process_epub(save_dir_path, export_dir_path, output_file_path, input_file_pa
     strCmd = [epubgen,]
     strCmd.extend(input_file_paths)
     strCmd.extend([output_file_path, '--no-default-epub-cover', '--no-chapters-in-toc',
-                   '--level1-toc', '//h:li[@class="level-0"]'])
+                   '--level1-toc', '//h:h1[@class="section-title level-0"]',
+                   '--level2-toc', '//h:h1[@class="section-title level-1"]',
+                   '--level3-toc', '//h:h1[@class="section-title level-2"]'])
     env = { }
     # run the program with subprocess and pipe the input and output to variables
     p = subprocess.Popen(strCmd, close_fds=True, env=env)
