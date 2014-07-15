@@ -173,7 +173,8 @@ def getInputFiles(output_type, export_dir_path, save_dir_path='', translation_di
             # making localizer for i18n translation
             localizer = make_localizer(language, translation_dirs)
             title_filepath = os.path.join(export_dir_path, 'title.html')
-            createTitlePage(title_filepath, title, editors, save_dir_path=save_dir_path, localizer=localizer)
+            titlepage_html = createTitlePage(title_filepath, title, editors, save_dir_path=save_dir_path,
+                                             localizer=localizer, output_type=output_type)
             # add path of title.html into result list
             results.append(title_filepath)
             # recursively process collection content
@@ -190,7 +191,8 @@ def getInputFiles(output_type, export_dir_path, save_dir_path='', translation_di
             # create a toc.html file
             toc_filename = 'toc.html'
             toc_filepath = os.path.join(export_dir_path, toc_filename)
-            createTOCPage(toc_filepath, tocs, localizer=localizer)
+            createTOCPage(toc_filepath, tocs, localizer=localizer, output_type=output_type,
+                          titlepage_html=titlepage_html, collection_title=title)
             results.append(toc_filepath)
             # add path of modules index.html into result list
             results.extend(data[0])
@@ -204,6 +206,14 @@ def getInputFiles(output_type, export_dir_path, save_dir_path='', translation_di
             endfile_path = os.path.join(save_dir_path, endfile_name)
             results.append(endfile_path)
             if output_type == 'epub':
+                # copy epub css file and brand images to exported dir
+                import shutil, errno
+                epub_css_src = '%s/epub.css' % save_dir_path
+                epub_css_dst = '%s/epub.css' % export_dir_path
+                shutil.copy(epub_css_src, epub_css_dst)
+                imgs_src = '%s/images' % save_dir_path
+                imgs_dst = '%s/images' % export_dir_path
+                shutil.copytree(imgs_src, imgs_dst)
                 # epub export only need toc file
                 return [toc_filepath, ], err_msg
     except IOError:
@@ -330,9 +340,14 @@ def getParentTitles(parents):
         if parent.get('number', 0) <> 1: break
     return titles[::-1]
 
-def createTitlePage(filepath, title, editors=None, authors=None, url=None, version=None, save_dir_path='', localizer=None):
+def createTitlePage(filepath, title, editors=None, authors=None, url=None, version=None,
+                    save_dir_path='', localizer=None, output_type='pdf'):
     logo_path = os.path.join(save_dir_path, 'images/VOER.logo.jpeg')
-    html = u'<html><body><div id="title-page"><div class="logo"><center><img src="%s" width="155" /></center></div>' % logo_path
+    if output_type == 'pdf':
+        html = u'<html><body>'
+        html += u'<div id="title-page"><div class="logo"><center><img src="%s" width="155" /></center></div>' % logo_path
+    else:
+        html = u'<div id="title-page">'
     html += u'<h1 class="collection-title %s">%s</h1>' % (authors and 'title2' or '', title)
     # insert editors
     if editors:
@@ -360,16 +375,25 @@ def createTitlePage(filepath, title, editors=None, authors=None, url=None, versi
         html += u'<div><a href="%s">%s</a></div>' % (url, url)
         html += u'</div>'
     # end html
-    #html += u'</body></html>'
-    # WORKAROUND: add div for title page
-    html += u'</div></body></html>'
-    f = codecs.open(filepath, 'wb', 'utf-8')
-    f.write(html)
-    f.close()
+    html += u'</div>'
+    if output_type == 'pdf':
+        html += u'</body></html>'
+        f = codecs.open(filepath, 'wb', 'utf-8')
+        f.write(html)
+        f.close()
+    return html
 
-def createTOCPage(filepath, tocs, localizer=None):
+def createTOCPage(filepath, tocs, localizer=None, output_type='pdf', titlepage_html='', collection_title=''):
     lbl_outline = localizer.translate(_('outline', default='Outline'))
-    html = '<html><head></head><body><div id="toc"><h1 id="menu">%s</h1><ul class="tocs">' % lbl_outline
+    html = '<html>'
+    if output_type == 'epub':
+        html += '<head><title>%s</title>' % collection_title
+        html += '<link href="epub.css" rel="stylesheet" />'
+        html += '</head><body>'
+        html += titlepage_html
+    else:
+        html += '<head></head><body>'
+    html += '<div id="toc"><h1 id="menu">%s</h1><ul class="tocs">' % lbl_outline
     for toc in tocs:
         toc_level = toc[0]
         toc_str = toc[1]
