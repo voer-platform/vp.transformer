@@ -199,11 +199,13 @@ def getInputFiles(output_type, export_dir_path, save_dir_path='', translation_di
             # processing contribution page
             contrib_filename = 'contrib.html'
             contrib_filepath = os.path.join(export_dir_path, contrib_filename)
-            createContributionPage(contrib_filepath, collection, data[3], localizer=localizer)
-            results.append(contrib_filepath)
-            # add end page
+            # append endpage after contrib page for epub export only
             endfile_name = 'end_%s.html' % language
             endfile_path = os.path.join(save_dir_path, endfile_name)
+            createContributionPage(contrib_filepath, collection, data[3], localizer=localizer,
+                                   endfile_path=endfile_path, output_type=output_type)
+            results.append(contrib_filepath)
+            # add end page
             results.append(endfile_path)
             if output_type == 'epub':
                 # copy epub css file and brand images to exported dir
@@ -411,12 +413,13 @@ def createTOCPage(filepath, tocs, localizer=None, output_type='pdf', titlepage_h
     f.write(html)
     f.close()
 
-def createContributionPage(filepath, collection, modules, localizer=None):
+def createContributionPage(filepath, collection, modules, localizer=None, endfile_path='', output_type='pdf'):
     lbl_contrib = localizer.translate(_('contribution', default='Contribution'))
     lbl_coll = localizer.translate(_('collection', default='Collection'))
-    html = """<html><body>
-  <h1 class="contrib-title">%s</h1>
+    html = '<html><body>'
+    html += """
   <div class="coll-contrib">
+    <h1 class="contrib-title">%s</h1>
     <div>%s: %s</div>""" % (lbl_contrib, lbl_coll, collection['title'])
     lbl_edited_by = localizer.translate(_('edited-by', default='Edited by'))
     html += '<div>%s: ' % lbl_edited_by
@@ -440,6 +443,16 @@ def createContributionPage(filepath, collection, modules, localizer=None):
         html += '<div>%s: %s</div>' % (lbl_license, module.get('license', ''))
         html += '</div>'
     html += '</div>'
+    if endfile_path:
+        f = codecs.open(endfile_path, 'r+', 'utf-8')
+        endfile_html = f.read()
+        f.close()
+        endfile_html.replace('<html>', '')
+        endfile_html.replace('<head></head>', '')
+        endfile_html.replace('<body>', '')
+        endfile_html.replace('</body>', '')
+        endfile_html.replace('</html>', '')
+        html += endfile_html
     html += '</body></html>'
     f = codecs.open(filepath, 'wb', 'utf-8')
     f.write(html)
