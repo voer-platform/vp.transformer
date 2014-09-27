@@ -70,11 +70,12 @@ figure figcaption {
 h1.module-title {
     font-size: 36pt;
     text-align: center;
-    margin-top: 24pt;
-    margin-bottom: 12pt;
+    padding-top: 35%;
+    margin-bottom: 16px;
+    background: transparent url("images/VOER.logo.jpeg") 50% 0% no-repeat;
 }
 h1.collection-title, h1.chapter-title {
-    font-size: 26pt;
+    font-size: 2.2em;
     text-align: center;
     padding-top: 35%;
     margin-bottom: 10%;
