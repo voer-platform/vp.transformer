@@ -1,3 +1,5 @@
+@import url("fonts.css");
+
 @page {
     margin: 20mm 25mm 20mm 30mm;
 
@@ -30,8 +32,8 @@
 h1.module-title { string-set: moduletitle content() }
 
 body {
-    font-family: Times New Roman;
-    font-size: 13pt;
+    font-family: Noto Serif;
+    font-size: 11pt;
 }
 
 table {
@@ -89,7 +91,7 @@ h1.module-title {
     margin-bottom: 12pt;
 }
 h1.collection-title, h1.chapter-title {
-    font-size: 26pt;
+    font-size: 28pt;
     text-align: center;
     margin-top: 200pt;
     margin-bottom: 60pt;
