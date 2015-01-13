@@ -168,13 +168,14 @@ def getInputFiles(output_type, export_dir_path, save_dir_path='', translation_di
                 return results, err_msg
             # processing the title page
             title = collection['title']
+            subtitle = collection.get('subtitle', '')
             editors = collection.get('editors')
             language = collection.get('language', 'vi')
             # making localizer for i18n translation
             localizer = make_localizer(language, translation_dirs)
             title_filepath = os.path.join(export_dir_path, 'title.html')
-            titlepage_html = createTitlePage(title_filepath, title, editors, save_dir_path=save_dir_path,
-                                             localizer=localizer, output_type=output_type)
+            titlepage_html = createTitlePage(title_filepath, title, editors, subtitle=subtitle,
+                                             save_dir_path=save_dir_path, localizer=localizer, output_type=output_type)
             # add path of title.html into result list
             results.append(title_filepath)
             # recursively process collection content
@@ -183,7 +184,7 @@ def getInputFiles(output_type, export_dir_path, save_dir_path='', translation_di
             # processing the title page 2
             title_filepath2 = os.path.join(export_dir_path, 'title2.html')
             createTitlePage(title_filepath2, title, editors, authors, collection.get('url'),
-                            collection.get('version'), save_dir_path=save_dir_path, localizer=localizer)
+                            collection.get('version'), subtitle=subtitle, save_dir_path=save_dir_path, localizer=localizer)
             # add path of title2.html into result list
             results.append(title_filepath2)
             tocs = data[1]
@@ -343,7 +344,7 @@ def getParentTitles(parents):
     return titles[::-1]
 
 def createTitlePage(filepath, title, editors=None, authors=None, url=None, version=None,
-                    save_dir_path='', localizer=None, output_type='pdf'):
+                    subtitle='', save_dir_path='', localizer=None, output_type='pdf'):
     logo_path = os.path.join(save_dir_path, 'images/VOER.logo.jpeg')
     if output_type == 'pdf':
         html = u'<html><body>'
@@ -351,6 +352,7 @@ def createTitlePage(filepath, title, editors=None, authors=None, url=None, versi
     else:
         html = u'<div id="title-page">'
     html += u'<h1 class="collection-title %s">%s</h1>' % (authors and 'title2' or '', title)
+    html += u'<h2 class="collection-subtitle">%s</h2>' % subtitle
     # insert editors
     if editors:
         lbl_edited_by = localizer.translate(_('edited-by', default='Edited by'))
