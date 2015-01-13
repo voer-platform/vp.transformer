@@ -204,7 +204,10 @@ def getInputFiles(output_type, export_dir_path, save_dir_path='', translation_di
             endfile_name = 'end_%s.html' % language
             endfile_path = os.path.join(save_dir_path, endfile_name)
             createContributionPage(contrib_filepath, collection, data[3], localizer=localizer,
-                                   endfile_path=endfile_path, output_type=output_type)
+            # NOTE: why do we have to append endfile into contribution page here?
+            # disable it and use separate endfile below
+            #                       endfile_path=endfile_path, output_type=output_type)
+                                   endfile_path='', output_type=output_type)
             results.append(contrib_filepath)
             # add end page
             results.append(endfile_path)
